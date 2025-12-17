@@ -1,0 +1,236 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import logoVGAirlink from "../../assets/logo-voiceguide-airlink.png";
+import { colors } from "../../theme/adminTheme";
+import apiClient from "../../api/client";
+
+export default function AdminLogin() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      // Login admin: qui NON serve l'Authorization header
+      const res = await apiClient.post("/admin/login", { email, password });
+
+      const token = res.data?.access_token;
+      if (!token) throw new Error("Token mancante nella risposta");
+
+      localStorage.setItem("vg_admin_token", token);
+      navigate("/admin/dashboard");
+    } catch (err) {
+      console.error("Errore login admin:", err);
+      setError("Credenziali non valide o server non raggiungibile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isDev = import.meta.env.DEV;
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.logoWrapper}>
+          <div style={styles.logoCircle}>
+            <img
+              src={logoVGAirlink}
+              alt="VoiceGuide AirLink"
+              style={styles.logoImage}
+            />
+          </div>
+          <div>
+            <div style={styles.logoText}>VOICEGUIDE</div>
+            <div style={styles.logoSub}>Admin Console</div>
+          </div>
+        </div>
+
+        <h1 style={styles.title}>Accesso Console</h1>
+        <p style={styles.subtitle}>Area riservata all’amministrazione</p>
+
+        <form onSubmit={handleLogin} style={{ marginTop: "1.5rem" }}>
+          <div style={{ marginBottom: "0.75rem", textAlign: "left" }}>
+            <label style={styles.label}>Email</label>
+            <input
+              type="email"
+              placeholder="admin@voiceguide.it"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              autoComplete="email"
+            />
+          </div>
+
+          <div style={{ marginBottom: "0.5rem", textAlign: "left" }}>
+            <label style={styles.label}>Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              autoComplete="current-password"
+            />
+          </div>
+
+          {/* Hint DEV (solo in dev) */}
+          {isDev && (
+            <div style={styles.hint}>
+              <strong>DEV login:</strong> admin@voiceguide.it / admin123
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} style={styles.button}>
+            {loading ? "Accesso in corso..." : "Accedi alla console"}
+          </button>
+        </form>
+
+        {error && <p style={styles.error}>{error}</p>}
+
+        <div style={styles.footer}>
+          <span style={{ opacity: 0.7, fontSize: "0.8rem" }}>
+            VoiceGuide Admin
+          </span>
+          <span style={styles.powered}>
+            Powered by <strong>Virgilius</strong>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    padding: "24px 16px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background:
+      "radial-gradient(circle at top, #111827 0, #050816 36%, #020617 100%)",
+    fontFamily:
+      "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  card: {
+    background:
+      "radial-gradient(circle at top left, rgba(253,197,0,0.08), transparent 60%), " +
+      colors.bg,
+    borderRadius: "20px",
+    padding: "30px 32px 22px",
+    boxShadow: "0 22px 50px rgba(0, 0, 0, 0.75)",
+    border: `1px solid ${colors.accentBorder}`,
+    maxWidth: "420px",
+    width: "100%",
+    color: colors.text,
+    textAlign: "center",
+  },
+  logoWrapper: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    justifyContent: "center",
+    marginBottom: "10px",
+  },
+  logoCircle: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "14px",
+    overflow: "hidden",
+    background: "#FFFFFF",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: `1px solid ${colors.accentStrongBorder}`,
+    boxShadow: "0 0 24px rgba(253,197,0,0.45)",
+  },
+  logoImage: {
+    width: "42px",
+    height: "42px",
+    objectFit: "contain",
+  },
+  logoText: {
+    fontSize: "0.95rem",
+    fontWeight: 800,
+    letterSpacing: "0.12em",
+    color: colors.accent,
+  },
+  logoSub: {
+    fontSize: "0.75rem",
+    opacity: 0.8,
+    color: colors.textMuted,
+  },
+  title: {
+    fontSize: "1.4rem",
+    fontWeight: 700,
+    marginTop: "10px",
+    marginBottom: "0.4rem",
+  },
+  subtitle: {
+    fontSize: "0.9rem",
+    opacity: 0.8,
+  },
+  label: {
+    display: "block",
+    fontSize: "0.8rem",
+    marginBottom: "4px",
+    opacity: 0.78,
+  },
+  input: {
+    width: "100%",
+    padding: "0.7rem 0.8rem",
+    borderRadius: "999px",
+    border: `1px solid ${colors.borderSoft}`,
+    background: colors.bgDeep,
+    color: colors.text,
+    fontSize: "0.9rem",
+    outline: "none",
+  },
+  hint: {
+    fontSize: "0.7rem",
+    opacity: 0.55,
+    marginBottom: "0.8rem",
+    textAlign: "left",
+  },
+  button: {
+    width: "100%",
+    padding: "0.8rem",
+    background: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
+    borderRadius: "999px",
+    border: "none",
+    color: "#1F2933",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "0.95rem",
+    marginTop: "4px",
+    boxShadow: "0 12px 35px rgba(253,197,0,0.45)",
+  },
+  error: {
+    marginTop: "0.9rem",
+    color: colors.dangerSoft,
+    fontSize: "0.85rem",
+  },
+  footer: {
+    marginTop: "1.2rem",
+    borderTop: "1px solid rgba(15,23,42,0.9)",
+    paddingTop: "0.6rem",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: "0.75rem",
+    opacity: 0.9,
+  },
+  powered: {
+    fontSize: "0.78rem",
+    color: colors.accent,
+  },
+};
