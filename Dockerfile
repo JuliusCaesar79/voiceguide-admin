@@ -1,8 +1,12 @@
 # ---- build stage
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+
+# Install deps (clean, reproducible)
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Build
 COPY . .
 RUN npm run build
 
@@ -10,7 +14,12 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/dist ./dist
+
+# Install a tiny static server
 RUN npm i -g serve
+
+# Copy only build output
+COPY --from=build /app/dist ./dist
+
 EXPOSE 8080
 CMD ["sh", "-c", "serve -s dist -l ${PORT:-8080}"]
