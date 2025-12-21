@@ -1,5 +1,3 @@
-// src/pages/admin/AdminDashboard.jsx
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -23,21 +21,19 @@ export default function AdminDashboard() {
     totalBalance: 0,
   });
 
-  // ✅ split active/inactive
+  // ✅ partner counts (FIX DEFINITIVO)
   const [partnersActiveCount, setPartnersActiveCount] = useState(0);
   const [partnersInactiveCount, setPartnersInactiveCount] = useState(0);
 
   const [pendingPartnerRequests, setPendingPartnerRequests] = useState(0);
-
-  // ✅ NEW: Trial Requests pending
-  const [pendingTrialRequests, setPendingTrialRequests] = useState(0);
+  const [pendingTrialRequestsequests, setPendingTrialRequests] = useState(0);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // 1) Ordini
+      // 1) ORDINI
       try {
         const resOrders = await apiClient.get("/admin/orders");
         const data = resOrders.data || {};
@@ -47,42 +43,35 @@ export default function AdminDashboard() {
           totalAmount: data.total_amount || 0,
         });
       } catch (err) {
-        console.warn("Errore caricamento riepilogo ordini:", err);
+        console.warn("Errore caricamento ordini:", err);
       }
 
-      // 2) Payouts by partner
+      // 2) PAYOUTS
       try {
         const resPayouts = await apiClient.get("/admin/payouts/by-partner");
         const rows = Array.isArray(resPayouts.data) ? resPayouts.data : [];
-        const totalGenerated = rows.reduce((sum, r) => sum + (r.total_generated || 0), 0);
-        const totalPaid = rows.reduce((sum, r) => sum + (r.total_paid || 0), 0);
-        const totalBalance = rows.reduce((sum, r) => sum + (r.balance_due || 0), 0);
-        setPayoutsSummary({
-          totalGenerated,
-          totalPaid,
-          totalBalance,
-        });
+        const totalGenerated = rows.reduce((s, r) => s + (r.total_generated || 0), 0);
+        const totalPaid = rows.reduce((s, r) => s + (r.total_paid || 0), 0);
+        const totalBalance = rows.reduce((s, r) => s + (r.balance_due || 0), 0);
+        setPayoutsSummary({ totalGenerated, totalPaid, totalBalance });
       } catch (err) {
-        console.warn("Errore caricamento riepilogo payouts:", err);
+        console.warn("Errore caricamento payouts:", err);
       }
 
-      // 3) Partner counts (active / inactive)
+      // ✅ 3) PARTNER COUNT (COUNT endpoint → DB-safe)
       try {
         const [resActive, resInactive] = await Promise.all([
-          apiClient.get("/admin/partners", { params: { active: true } }),
-          apiClient.get("/admin/partners", { params: { active: false } }),
+          apiClient.get("/admin/partners/count", { params: { active: "true" } }),
+          apiClient.get("/admin/partners/count", { params: { active: "false" } }),
         ]);
 
-        const activeItems = Array.isArray(resActive.data) ? resActive.data : [];
-        const inactiveItems = Array.isArray(resInactive.data) ? resInactive.data : [];
-
-        setPartnersActiveCount(activeItems.length);
-        setPartnersInactiveCount(inactiveItems.length);
+        setPartnersActiveCount(Number(resActive?.data?.count ?? 0));
+        setPartnersInactiveCount(Number(resInactive?.data?.count ?? 0));
       } catch (err) {
-        console.warn("Errore caricamento partner (active/inactive):", err);
+        console.warn("Errore conteggio partner:", err);
       }
 
-      // 4) Partner Requests (PENDING)
+      // 4) PARTNER REQUESTS (PENDING)
       try {
         const resReq = await apiClient.get("/admin/partner-requests", {
           params: { status: "PENDING" },
@@ -93,13 +82,12 @@ export default function AdminDashboard() {
         console.warn("Errore caricamento richieste partner:", err);
       }
 
-      // ✅ 5) Trial Requests (PENDING) — via count endpoint
+      // 5) TRIAL REQUESTS (PENDING)
       try {
         const resTrialCount = await apiClient.get("/admin/trial-requests/count", {
           params: { status: "PENDING" },
         });
-        const count = Number(resTrialCount?.data?.count ?? 0);
-        setPendingTrialRequests(Number.isFinite(count) ? count : 0);
+        setPendingTrialRequests(Number(resTrialCount?.data?.count ?? 0));
       } catch (err) {
         console.warn("Errore caricamento richieste trial:", err);
       }
@@ -126,7 +114,7 @@ export default function AdminDashboard() {
           gap: "18px",
         }}
       >
-        {/* Header */}
+        {/* HEADER */}
         <div
           style={{
             background:
@@ -160,42 +148,24 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button
-              type="button"
-              onClick={fetchData}
-              style={{
-                padding: "10px 14px",
-                borderRadius: "999px",
-                border: `1px solid ${colors.borderSoft}`,
-                background: colors.bgDeep,
-                color: colors.text,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Aggiorna
-            </button>
-          </div>
-        </div>
-
-        {/* Alert errore */}
-        {error && (
-          <div
+          <button
+            type="button"
+            onClick={fetchData}
             style={{
-              background: colors.card,
-              borderRadius: "16px",
-              padding: "14px 18px",
-              border: `1px solid ${colors.danger}`,
-              color: colors.dangerSoft,
-              fontSize: "0.9rem",
+              padding: "10px 14px",
+              borderRadius: "999px",
+              border: `1px solid ${colors.borderSoft}`,
+              background: colors.bgDeep,
+              color: colors.text,
+              fontWeight: 700,
+              cursor: "pointer",
             }}
           >
-            {error}
-          </div>
-        )}
+            Aggiorna
+          </button>
+        </div>
 
-        {/* Riepilogo principale - tile */}
+        {/* TILE */}
         <div
           style={{
             display: "grid",
@@ -203,94 +173,37 @@ export default function AdminDashboard() {
             gap: "14px",
           }}
         >
-          <StatCard
-            label="Numero ordini"
-            value={ordersSummary.totalCount}
-            hint="Totale ordini registrati nel periodo corrente."
-          />
-          <StatCard
-            label="Incassato totale"
-            value={formatEuro(ordersSummary.totalAmount)}
-            hint="Somma degli importi degli ordini."
-          />
-          <StatCard
-            label="Partner attivi"
-            value={partnersActiveCount}
-            hint="Numero di partner attivi (is_active=true)."
-          />
-          <StatCard
-            label="Partner disattivi"
-            value={partnersInactiveCount}
-            hint="Partner in pausa/chiusi (is_active=false)."
-          />
-          <StatCard
-            label="Richieste partner (PENDING)"
-            value={pendingPartnerRequests}
-            hint="Richieste in attesa di approvazione o rifiuto."
-          />
-          {/* ✅ Trial */}
-          <StatCard
-            label="Richieste trial (PENDING)"
-            value={pendingTrialRequests}
-            hint="Richieste trial in attesa di emissione licenza."
-          />
+          <StatCard label="Numero ordini" value={ordersSummary.totalCount} />
+          <StatCard label="Incassato totale" value={formatEuro(ordersSummary.totalAmount)} />
+          <StatCard label="Partner attivi" value={partnersActiveCount} />
+          <StatCard label="Partner disattivi" value={partnersInactiveCount} />
+          <StatCard label="Richieste partner (PENDING)" value={pendingPartnerRequests} />
+          <StatCard label="Richieste trial (PENDING)" value={pendingTrialRequests} />
         </div>
 
-        {/* Card riepilogo economico */}
+        {/* ECONOMIA */}
         <div
           style={{
             background: colors.card,
             borderRadius: "16px",
             padding: "18px 22px",
-            boxShadow: "0 12px 35px rgba(0, 0, 0, 0.6)",
             border: `1px solid ${colors.borderSoft}`,
             display: "flex",
-            flexWrap: "wrap",
             gap: "16px",
-            justifyContent: "space-between",
-            alignItems: "center",
+            flexWrap: "wrap",
           }}
         >
-          <div
-            style={{
-              fontSize: "0.9rem",
-              opacity: 0.9,
-              maxWidth: "420px",
-              color: colors.textSoft,
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: "4px", color: colors.text }}>
-              Riepilogo economico partner
-            </div>
-            <div>
-              Totale generato dagli ordini, totale già pagato e saldo residuo da
-              corrispondere ai tuoi alleati.
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
-            <MiniBox
-              label="Totale generato (ordini)"
-              value={formatEuro(payoutsSummary.totalGenerated)}
-            />
-            <MiniBox label="Totale pagato" value={formatEuro(payoutsSummary.totalPaid)} />
-            <MiniBox label="Saldo residuo" value={formatEuro(payoutsSummary.totalBalance)} />
-          </div>
+          <MiniBox label="Totale generato" value={formatEuro(payoutsSummary.totalGenerated)} />
+          <MiniBox label="Totale pagato" value={formatEuro(payoutsSummary.totalPaid)} />
+          <MiniBox label="Saldo residuo" value={formatEuro(payoutsSummary.totalBalance)} />
         </div>
 
-        {/* Card scorciatoie */}
+        {/* SHORTCUT */}
         <div
           style={{
             background: colors.card,
             borderRadius: "16px",
             padding: "20px 24px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
             border: `1px solid ${colors.borderSoft}`,
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -303,51 +216,40 @@ export default function AdminDashboard() {
             buttonLabel="Vai agli ordini"
             onClick={() => navigate("/admin/orders")}
           />
-
           <ShortcutCard
             title="Create Trial License"
             description="Crea una licenza di prova/manuale e invia automaticamente il codice via email."
             buttonLabel="Crea trial"
             onClick={() => navigate("/admin/licenses/trial")}
           />
-
           <ShortcutCard
-            title={`Richieste Trial${pendingTrialRequests > 0 ? ` (${pendingTrialRequests})` : ""}`}
-            description="Inbox richieste trial dal sito: emetti la trial (AirLink+email) o rifiuta."
+            title="Richieste Trial"
+            description="Inbox richieste trial dal sito."
             buttonLabel="Vai alle richieste trial"
             onClick={() => navigate("/admin/trial-requests")}
           />
-
           <ShortcutCard
             title="Payout e commissioni"
-            description="Controlla quanto hai già pagato ai partner e i saldi residui da corrispondere."
+            description="Controlla i pagamenti e i saldi residui."
             buttonLabel="Vai ai payout"
             onClick={() => navigate("/admin/payouts")}
           />
-
           <ShortcutCard
-            title={`Richieste partner${pendingPartnerRequests > 0 ? ` (${pendingPartnerRequests})` : ""}`}
-            description="Approva o rifiuta le richieste: la promozione crea automaticamente il partner con referral."
+            title="Richieste partner"
+            description="Approva o rifiuta le richieste partner."
             buttonLabel="Vai alle richieste"
             onClick={() => navigate("/admin/partner-requests")}
           />
-
           <ShortcutCard
             title="Partner VoiceGuide"
-            description="Rivedi i tuoi partner, il loro referral e la relativa attività."
+            description="Rivedi i tuoi partner."
             buttonLabel="Vai ai partner"
             onClick={() => navigate("/admin/partners")}
           />
         </div>
 
         {loading && (
-          <p
-            style={{
-              opacity: 0.7,
-              fontSize: "0.85rem",
-              marginTop: "6px",
-            }}
-          >
+          <p style={{ opacity: 0.7, fontSize: "0.85rem" }}>
             Aggiornamento dati in corso...
           </p>
         )}
@@ -356,48 +258,22 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ label, value, hint }) {
+/* ----------------- COMPONENTI UI ----------------- */
+
+function StatCard({ label, value }) {
   return (
     <div
       style={{
         background: colors.card,
         borderRadius: "14px",
         padding: "14px 16px",
-        boxShadow: "0 12px 35px rgba(0, 0, 0, 0.6)",
         border: `1px solid ${colors.borderStrong}`,
       }}
     >
-      <div
-        style={{
-          fontSize: "0.8rem",
-          opacity: 0.72,
-          marginBottom: "4px",
-          color: colors.textSoft,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: "1.2rem",
-          fontWeight: 700,
-          marginBottom: "4px",
-          color: colors.accent,
-        }}
-      >
+      <div style={{ fontSize: "0.8rem", opacity: 0.72 }}>{label}</div>
+      <div style={{ fontSize: "1.2rem", fontWeight: 700, color: colors.accent }}>
         {value}
       </div>
-      {hint && (
-        <div
-          style={{
-            fontSize: "0.75rem",
-            opacity: 0.65,
-            color: colors.textSoft,
-          }}
-        >
-          {hint}
-        </div>
-      )}
     </div>
   );
 }
@@ -409,31 +285,12 @@ function MiniBox({ label, value }) {
         minWidth: "160px",
         padding: "8px 10px",
         borderRadius: "10px",
-        background:
-          "radial-gradient(circle at top left, rgba(253,197,0,0.14), transparent 55%), " +
-          colors.bgDeep,
+        background: colors.bgDeep,
         border: `1px solid ${colors.accentBorder}`,
       }}
     >
-      <div
-        style={{
-          fontSize: "0.8rem",
-          opacity: 0.78,
-          marginBottom: "2px",
-          color: colors.textSoft,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: "0.95rem",
-          fontWeight: 600,
-          color: colors.accent,
-        }}
-      >
-        {value}
-      </div>
+      <div style={{ fontSize: "0.8rem", opacity: 0.78 }}>{label}</div>
+      <div style={{ fontWeight: 600, color: colors.accent }}>{value}</div>
     </div>
   );
 }
@@ -449,45 +306,22 @@ function ShortcutCard({ title, description, buttonLabel, onClick }) {
         display: "flex",
         flexDirection: "column",
         gap: "8px",
-        justifyContent: "space-between",
       }}
     >
       <div>
-        <div
-          style={{
-            fontSize: "0.95rem",
-            fontWeight: 600,
-            marginBottom: "4px",
-          }}
-        >
-          {title}
-        </div>
-        <div
-          style={{
-            fontSize: "0.8rem",
-            opacity: 0.8,
-            color: colors.textSoft,
-          }}
-        >
-          {description}
-        </div>
+        <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{title}</div>
+        <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>{description}</div>
       </div>
-
       <button
-        type="button"
         onClick={onClick}
         style={{
-          marginTop: "10px",
           alignSelf: "flex-start",
           padding: "6px 12px",
           borderRadius: "999px",
+          background: "linear-gradient(135deg, #FDC500, #FBBF24)",
           border: "none",
-          background: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
-          color: "#1F2933",
-          fontSize: "0.8rem",
           fontWeight: 600,
           cursor: "pointer",
-          boxShadow: "0 10px 25px rgba(253,197,0,0.35)",
         }}
       >
         {buttonLabel}
