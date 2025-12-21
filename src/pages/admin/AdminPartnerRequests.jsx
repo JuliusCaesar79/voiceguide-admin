@@ -4,6 +4,8 @@ import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../api/client";
 import { colors } from "../../theme/adminTheme";
 
+const TIER_DEFAULT = { BASE: 10, PRO: 15, ELITE: 20 };
+
 export default function AdminPartnerRequests() {
   const navigate = useNavigate();
 
@@ -13,6 +15,12 @@ export default function AdminPartnerRequests() {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+
+  // ---- Approve modal ----
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [approveReq, setApproveReq] = useState(null);
+  const [tier, setTier] = useState("BASE");
+  const [commissionOverride, setCommissionOverride] = useState("");
 
   const fetchRows = async () => {
     setError("");
@@ -25,7 +33,9 @@ export default function AdminPartnerRequests() {
       setRows(res.data || []);
     } catch (e) {
       console.error(e);
-      setError("Errore caricamento richieste partner (token o server non raggiungibile).");
+      setError(
+        "Errore caricamento richieste partner (token o server non raggiungibile)."
+      );
     } finally {
       setLoading(false);
     }
@@ -44,31 +54,57 @@ export default function AdminPartnerRequests() {
     return c;
   }, [rows]);
 
-  const approve = async (id) => {
+  const openApprove = (r) => {
     setError("");
     setOk("");
-    const commissionPctRaw = window.prompt(
-      "Commissione % (lascia vuoto per default in base al tier):",
-      ""
-    );
+    setApproveReq(r);
+    const initialTier = String(r?.partner_tier || "BASE").toUpperCase();
+    setTier(TIER_DEFAULT[initialTier] ? initialTier : "BASE");
+    setCommissionOverride("");
+    setApproveOpen(true);
+  };
 
-    setBusyId(id);
+  const closeApprove = () => {
+    setApproveOpen(false);
+    setApproveReq(null);
+    setCommissionOverride("");
+    setTier("BASE");
+  };
+
+  const approve = async () => {
+    if (!approveReq?.id) return;
+    setError("");
+    setOk("");
+    setBusyId(approveReq.id);
+
     try {
-      const params = {};
-      if (commissionPctRaw !== null && commissionPctRaw.trim() !== "") {
-        const val = Number(commissionPctRaw.replace(",", "."));
+      const params = { tier };
+
+      if (commissionOverride.trim() !== "") {
+        const val = Number(commissionOverride.replace(",", "."));
         if (Number.isNaN(val) || val < 0 || val > 100) {
           throw new Error("Commissione non valida (0-100).");
         }
         params.commission_pct = val;
       }
 
-      await apiClient.post(`/admin/partner-requests/${id}/approve`, null, { params });
+      await apiClient.post(
+        `/admin/partner-requests/${approveReq.id}/approve`,
+        null,
+        { params }
+      );
+
       setOk("Richiesta approvata e partner creato ✅");
+      closeApprove();
       await fetchRows();
     } catch (e) {
       console.error(e);
-      setError(e?.message || "Errore approvazione richiesta.");
+      const serverMsg =
+        e?.response?.data?.detail ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Errore approvazione richiesta.";
+      setError(serverMsg);
     } finally {
       setBusyId(null);
     }
@@ -87,11 +123,20 @@ export default function AdminPartnerRequests() {
       await fetchRows();
     } catch (e) {
       console.error(e);
-      setError("Errore rifiuto richiesta.");
+      const serverMsg =
+        e?.response?.data?.detail ||
+        e?.response?.data?.message ||
+        "Errore rifiuto richiesta.";
+      setError(serverMsg);
     } finally {
       setBusyId(null);
     }
   };
+
+  const effectivePct =
+    commissionOverride.trim() !== ""
+      ? commissionOverride
+      : String(TIER_DEFAULT[tier] ?? 10);
 
   return (
     <AdminLayout title="Richieste Partner">
@@ -108,13 +153,19 @@ export default function AdminPartnerRequests() {
               <option value="APPROVED">APPROVED</option>
               <option value="REJECTED">REJECTED</option>
             </select>
+            <span style={{ ...styles.label, marginLeft: 8, opacity: 0.55 }}>
+              (P:{counts.PENDING} A:{counts.APPROVED} R:{counts.REJECTED})
+            </span>
           </div>
 
           <div style={styles.actions}>
             <button onClick={fetchRows} style={styles.btnSecondary}>
               Aggiorna
             </button>
-            <button onClick={() => navigate("/admin/dashboard")} style={styles.btnGhost}>
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              style={styles.btnGhost}
+            >
               ← Dashboard
             </button>
           </div>
@@ -136,7 +187,11 @@ export default function AdminPartnerRequests() {
                   <div style={styles.name}>{r.name || "—"}</div>
                   <div style={styles.meta}>
                     <span style={styles.badge}>{r.status}</span>
-                    {r.partner_tier && <span style={styles.badgeSoft}>Tier: {r.partner_tier}</span>}
+                    {r.partner_tier && (
+                      <span style={styles.badgeSoft}>
+                        Tier richiesto: {r.partner_tier}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={styles.id}>#{r.id}</div>
@@ -160,10 +215,18 @@ export default function AdminPartnerRequests() {
                 )}
               </div>
 
+              {/* Messaggio (notes) */}
+              {r?.notes && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={styles.k}>Messaggio</div>
+                  <div style={styles.msgBox}>{r.notes}</div>
+                </div>
+              )}
+
               <div style={styles.buttons}>
                 <button
                   disabled={r.status !== "PENDING" || busyId === r.id}
-                  onClick={() => approve(r.id)}
+                  onClick={() => openApprove(r)}
                   style={styles.btnPrimary}
                 >
                   {busyId === r.id ? "..." : "Approva"}
@@ -179,6 +242,60 @@ export default function AdminPartnerRequests() {
               </div>
             </div>
           ))}
+
+        {/* Approve Modal */}
+        {approveOpen && (
+          <div style={styles.modalOverlay} onClick={closeApprove}>
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.modalTitle}>Approva richiesta</div>
+              <div style={styles.modalSub}>
+                {approveReq?.name} — {approveReq?.email}
+              </div>
+
+              <div style={styles.modalRow}>
+                <label style={styles.modalLabel}>Tier</label>
+                <select
+                  value={tier}
+                  onChange={(e) => setTier(e.target.value)}
+                  style={styles.modalSelect}
+                >
+                  <option value="BASE">BASE (10%)</option>
+                  <option value="PRO">PRO (15%)</option>
+                  <option value="ELITE">ELITE (20%)</option>
+                </select>
+              </div>
+
+              <div style={styles.modalRow}>
+                <label style={styles.modalLabel}>
+                  Commissione override % (opz.)
+                </label>
+                <input
+                  value={commissionOverride}
+                  onChange={(e) => setCommissionOverride(e.target.value)}
+                  placeholder={`Default: ${TIER_DEFAULT[tier]}%`}
+                  style={styles.modalInput}
+                />
+              </div>
+
+              <div style={styles.preview}>
+                Commissione che verrà applicata: <b>{effectivePct}%</b>
+              </div>
+
+              <div style={styles.modalBtns}>
+                <button onClick={closeApprove} style={styles.btnSecondary}>
+                  Annulla
+                </button>
+                <button
+                  onClick={approve}
+                  style={styles.btnPrimary}
+                  disabled={busyId === approveReq?.id}
+                >
+                  {busyId === approveReq?.id ? "..." : "Conferma + Invia email"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
@@ -250,6 +367,18 @@ const styles = {
   k: { fontSize: 12, opacity: 0.65 },
   v: { fontSize: 13, marginTop: 4 },
 
+  msgBox: {
+    marginTop: 6,
+    padding: 12,
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSoft}`,
+    background: "rgba(255,255,255,0.03)",
+    lineHeight: 1.35,
+    fontSize: 13,
+    opacity: 0.95,
+    whiteSpace: "pre-wrap",
+  },
+
   buttons: { display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" },
 
   btnPrimary: {
@@ -316,5 +445,60 @@ const styles = {
     background: "rgba(239,68,68,0.10)",
     border: "1px solid rgba(239,68,68,0.25)",
     marginBottom: 12,
+  },
+
+  // Modal
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.65)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    zIndex: 9999,
+  },
+  modal: {
+    width: "min(560px, 100%)",
+    background: colors.bg,
+    border: `1px solid ${colors.accentBorder}`,
+    borderRadius: 18,
+    padding: 16,
+    boxShadow: "0 24px 60px rgba(0,0,0,0.55)",
+  },
+  modalTitle: { fontSize: 16, fontWeight: 900 },
+  modalSub: { marginTop: 4, fontSize: 13, opacity: 0.75 },
+  modalRow: { marginTop: 14, display: "grid", gap: 8 },
+  modalLabel: { fontSize: 12, opacity: 0.75 },
+  modalSelect: {
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSoft}`,
+    background: colors.bgDeep,
+    color: colors.text,
+    outline: "none",
+  },
+  modalInput: {
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSoft}`,
+    background: colors.bgDeep,
+    color: colors.text,
+    outline: "none",
+  },
+  preview: {
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 12,
+    background: "rgba(253,197,0,0.06)",
+    border: "1px solid rgba(253,197,0,0.18)",
+    fontSize: 13,
+  },
+  modalBtns: {
+    marginTop: 14,
+    display: "flex",
+    gap: 10,
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
   },
 };
