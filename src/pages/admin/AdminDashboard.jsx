@@ -26,7 +26,7 @@ export default function AdminDashboard() {
   const [partnersInactiveCount, setPartnersInactiveCount] = useState(0);
 
   const [pendingPartnerRequests, setPendingPartnerRequests] = useState(0);
-  const [pendingTrialRequestsequests, setPendingTrialRequests] = useState(0);
+  const [pendingTrialRequests, setPendingTrialRequests] = useState(0);
 
   const fetchData = async () => {
     try {
