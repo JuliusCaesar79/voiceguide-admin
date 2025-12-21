@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import logoVGAirlink from "../../assets/logo-voiceguide-airlink.png";
 import { colors } from "../../theme/adminTheme";
-import apiClient from "../../api/client"; // ✅ NEW (per badge count)
+import apiClient from "../../api/client"; // ✅ badge count
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [pendingTrialCount, setPendingTrialCount] = useState(null);
+  const [pendingPartnerCount, setPendingPartnerCount] = useState(null); // ✅ NEW
 
   // ✅ Drawer mobile
   const [isMobile, setIsMobile] = useState(false);
@@ -31,12 +33,27 @@ export default function AdminLayout({ children }) {
     }
   }
 
+  async function loadPendingPartnerCount() {
+    try {
+      const res = await apiClient.get("/admin/partner-requests", {
+        params: { status: "PENDING" },
+      });
+      const items = Array.isArray(res?.data) ? res.data : [];
+      setPendingPartnerCount(items.length);
+    } catch (e) {
+      // non blocchiamo UI: in caso di errore, badge non mostrato
+      setPendingPartnerCount(null);
+    }
+  }
+
   // Badge polling
   useEffect(() => {
     loadPendingTrialCount();
+    loadPendingPartnerCount();
 
     const t = setInterval(() => {
       loadPendingTrialCount();
+      loadPendingPartnerCount();
     }, 20000);
 
     return () => clearInterval(t);
@@ -93,7 +110,16 @@ export default function AdminLayout({ children }) {
         <NavItem to="/admin/dashboard" label="Dashboard" />
         <NavItem to="/admin/orders" label="Ordini" />
         <NavItem to="/admin/payouts" label="Payouts" />
+
+        {/* ✅ Partner list */}
         <NavItem to="/admin/partners" label="Partner" />
+
+        {/* ✅ Richieste Partner + badge */}
+        <NavItem
+          to="/admin/partner-requests"
+          label="Richieste Partner"
+          badge={pendingPartnerCount}
+        />
 
         {/* ✅ Richieste Trial + badge */}
         <NavItem

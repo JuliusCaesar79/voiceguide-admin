@@ -23,7 +23,10 @@ export default function AdminDashboard() {
     totalBalance: 0,
   });
 
-  const [partnersCount, setPartnersCount] = useState(0);
+  // ✅ split active/inactive
+  const [partnersActiveCount, setPartnersActiveCount] = useState(0);
+  const [partnersInactiveCount, setPartnersInactiveCount] = useState(0);
+
   const [pendingPartnerRequests, setPendingPartnerRequests] = useState(0);
 
   // ✅ NEW: Trial Requests pending
@@ -63,13 +66,20 @@ export default function AdminDashboard() {
         console.warn("Errore caricamento riepilogo payouts:", err);
       }
 
-      // 3) Partner
+      // 3) Partner counts (active / inactive)
       try {
-        const resPartners = await apiClient.get("/admin/partners");
-        const items = Array.isArray(resPartners.data) ? resPartners.data : [];
-        setPartnersCount(items.length);
+        const [resActive, resInactive] = await Promise.all([
+          apiClient.get("/admin/partners", { params: { active: true } }),
+          apiClient.get("/admin/partners", { params: { active: false } }),
+        ]);
+
+        const activeItems = Array.isArray(resActive.data) ? resActive.data : [];
+        const inactiveItems = Array.isArray(resInactive.data) ? resInactive.data : [];
+
+        setPartnersActiveCount(activeItems.length);
+        setPartnersInactiveCount(inactiveItems.length);
       } catch (err) {
-        console.warn("Errore caricamento partner:", err);
+        console.warn("Errore caricamento partner (active/inactive):", err);
       }
 
       // 4) Partner Requests (PENDING)
@@ -126,22 +136,47 @@ export default function AdminDashboard() {
             padding: "24px 30px",
             boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
             border: `1px solid ${colors.borderSoft}`,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
-          <h1 style={{ fontSize: "1.7rem", marginBottom: "0.3rem" }}>
-            Benvenuto Console!
-          </h1>
-          <p
-            style={{
-              opacity: 0.82,
-              fontSize: "0.95rem",
-              maxWidth: "640px",
-              color: colors.textSoft,
-            }}
-          >
-            Questa è la cabina di regia dell&apos;Impero VoiceGuide: qui hai a colpo
-            d&apos;occhio ordini, partner e stato dei payout verso i tuoi alleati.
-          </p>
+          <div>
+            <h1 style={{ fontSize: "1.7rem", marginBottom: "0.3rem" }}>
+              Benvenuto Console!
+            </h1>
+            <p
+              style={{
+                opacity: 0.82,
+                fontSize: "0.95rem",
+                maxWidth: "640px",
+                color: colors.textSoft,
+              }}
+            >
+              Questa è la cabina di regia dell&apos;Impero VoiceGuide: qui hai a colpo
+              d&apos;occhio ordini, partner e stato dei payout verso i tuoi alleati.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={fetchData}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "999px",
+                border: `1px solid ${colors.borderSoft}`,
+                background: colors.bgDeep,
+                color: colors.text,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Aggiorna
+            </button>
+          </div>
         </div>
 
         {/* Alert errore */}
@@ -160,7 +195,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Riepilogo principale - 5 tile */}
+        {/* Riepilogo principale - tile */}
         <div
           style={{
             display: "grid",
@@ -180,15 +215,20 @@ export default function AdminDashboard() {
           />
           <StatCard
             label="Partner attivi"
-            value={partnersCount}
-            hint="Numero di partner registrati nel sistema."
+            value={partnersActiveCount}
+            hint="Numero di partner attivi (is_active=true)."
+          />
+          <StatCard
+            label="Partner disattivi"
+            value={partnersInactiveCount}
+            hint="Partner in pausa/chiusi (is_active=false)."
           />
           <StatCard
             label="Richieste partner (PENDING)"
             value={pendingPartnerRequests}
             hint="Richieste in attesa di approvazione o rifiuto."
           />
-          {/* ✅ NEW */}
+          {/* ✅ Trial */}
           <StatCard
             label="Richieste trial (PENDING)"
             value={pendingTrialRequests}
@@ -264,7 +304,6 @@ export default function AdminDashboard() {
             onClick={() => navigate("/admin/orders")}
           />
 
-          {/* ✅ Trial license manual */}
           <ShortcutCard
             title="Create Trial License"
             description="Crea una licenza di prova/manuale e invia automaticamente il codice via email."
@@ -272,11 +311,8 @@ export default function AdminDashboard() {
             onClick={() => navigate("/admin/licenses/trial")}
           />
 
-          {/* ✅ NEW: Trial Requests inbox */}
           <ShortcutCard
-            title={`Richieste Trial${
-              pendingTrialRequests > 0 ? ` (${pendingTrialRequests})` : ""
-            }`}
+            title={`Richieste Trial${pendingTrialRequests > 0 ? ` (${pendingTrialRequests})` : ""}`}
             description="Inbox richieste trial dal sito: emetti la trial (AirLink+email) o rifiuta."
             buttonLabel="Vai alle richieste trial"
             onClick={() => navigate("/admin/trial-requests")}
@@ -290,9 +326,7 @@ export default function AdminDashboard() {
           />
 
           <ShortcutCard
-            title={`Richieste partner${
-              pendingPartnerRequests > 0 ? ` (${pendingPartnerRequests})` : ""
-            }`}
+            title={`Richieste partner${pendingPartnerRequests > 0 ? ` (${pendingPartnerRequests})` : ""}`}
             description="Approva o rifiuta le richieste: la promozione crea automaticamente il partner con referral."
             buttonLabel="Vai alle richieste"
             onClick={() => navigate("/admin/partner-requests")}
