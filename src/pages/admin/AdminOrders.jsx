@@ -187,7 +187,13 @@ export default function AdminOrders() {
           {loading && <p>Caricamento ordini...</p>}
 
           {!loading && orders.length === 0 && !error && (
-            <p style={{ opacity: 0.8, fontSize: "0.9rem", color: colors.textSoft }}>
+            <p
+              style={{
+                opacity: 0.8,
+                fontSize: "0.9rem",
+                color: colors.textSoft,
+              }}
+            >
               Nessun ordine trovato nel periodo selezionato.
             </p>
           )}
@@ -225,7 +231,6 @@ export default function AdminOrders() {
                     <Th>Margine</Th>
                     <Th>Pagamento</Th>
 
-                    {/* ✅ new */}
                     <Th>Azioni</Th>
                   </tr>
                 </thead>
@@ -240,7 +245,6 @@ export default function AdminOrders() {
                       Number(discount || 0) > 0 &&
                       (o.referral_code || o.partner_id != null);
 
-                    // ✅ Fatturazione (retrocompat)
                     const invoiceRequested = Boolean(
                       o.invoice_requested ??
                         o.request_invoice ??
@@ -248,7 +252,6 @@ export default function AdminOrders() {
                         false
                     );
 
-                    // ✅ Dettagli fatturazione (nuovo payload backend)
                     const bd = o.billing_details || null;
 
                     const invoiceIntestatario =
@@ -259,7 +262,8 @@ export default function AdminOrders() {
                         o.company_name ||
                         "")?.trim() || "—";
 
-                    const invoiceCountry = (bd?.country || o.invoice_country || "")?.trim() || "—";
+                    const invoiceCountry =
+                      (bd?.country || o.invoice_country || "")?.trim() || "—";
                     const invoiceVat = (bd?.vat_number || "")?.trim() || "—";
                     const invoiceTaxCode = (bd?.tax_code || "")?.trim() || "—";
                     const invoiceSdi = (bd?.sdi_code || "")?.trim() || "—";
@@ -281,7 +285,12 @@ export default function AdminOrders() {
                         <Td>{o.created_at}</Td>
 
                         <Td>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
                             <span>{o.buyer_email}</span>
                             {o.buyer_whatsapp && (
                               <span
@@ -298,7 +307,13 @@ export default function AdminOrders() {
                         </Td>
 
                         <Td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "6px",
+                            }}
+                          >
                             <div
                               style={{
                                 display: "flex",
@@ -354,7 +369,6 @@ export default function AdminOrders() {
 
                         <Td>{o.order_type || "SINGLE"}</Td>
 
-                        {/* Fattura */}
                         <Td>
                           {invoiceRequested ? (
                             <span
@@ -371,77 +385,140 @@ export default function AdminOrders() {
                               Sì
                             </span>
                           ) : (
-                            <span style={{ opacity: 0.7, color: colors.textSoft }}>
+                            <span
+                              style={{
+                                opacity: 0.7,
+                                color: colors.textSoft,
+                              }}
+                            >
                               No
                             </span>
                           )}
                         </Td>
 
-                        {/* Intestatario */}
                         <Td>
                           {invoiceRequested ? (
                             <span>{invoiceIntestatario}</span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* Paese */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "monospace" }}>{invoiceCountry}</span>
+                            <span style={{ fontFamily: "monospace" }}>
+                              {invoiceCountry}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* VAT */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "monospace" }}>{invoiceVat}</span>
+                            <span style={{ fontFamily: "monospace" }}>
+                              {invoiceVat}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* CF */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "monospace" }}>{invoiceTaxCode}</span>
+                            <span style={{ fontFamily: "monospace" }}>
+                              {invoiceTaxCode}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* SDI */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "monospace" }}>{invoiceSdi}</span>
+                            <span style={{ fontFamily: "monospace" }}>
+                              {invoiceSdi}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* PEC */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "monospace" }}>{invoicePec}</span>
+                            <span style={{ fontFamily: "monospace" }}>
+                              {invoicePec}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        {/* Indirizzo */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ whiteSpace: "normal" }}>{invoiceAddress}</span>
+                            <span style={{ whiteSpace: "normal" }}>
+                              {invoiceAddress}
+                            </span>
                           ) : (
-                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                            <span
+                              style={{
+                                opacity: 0.6,
+                                color: colors.textSoft,
+                              }}
+                            >
+                              —
+                            </span>
                           )}
                         </Td>
 
-                        <Td>{subtotal != null ? formatEuro(subtotal) : "—"}</Td>
-                        <Td>{discount != null ? formatEuro(discount) : "—"}</Td>
+                        <Td>
+                          {subtotal != null ? formatEuro(subtotal) : "—"}
+                        </Td>
+                        <Td>
+                          {discount != null ? formatEuro(discount) : "—"}
+                        </Td>
                         <Td>{total != null ? formatEuro(total) : "—"}</Td>
 
                         <Td>
@@ -453,10 +530,12 @@ export default function AdminOrders() {
                         <Td>{o.margin != null ? formatEuro(o.margin) : "—"}</Td>
 
                         <Td>
-                          <PaymentBadge status={o.payment_status} method={o.payment_method} />
+                          <PaymentBadge
+                            status={o.payment_status}
+                            method={o.payment_method}
+                          />
                         </Td>
 
-                        {/* ✅ AZIONI */}
                         <Td styleOverride={{ whiteSpace: "nowrap" }}>
                           <button
                             type="button"
@@ -497,7 +576,11 @@ export default function AdminOrders() {
         </div>
 
         {/* ✅ MODAL DETTAGLIO */}
-        <OrderDetailModal open={detailOpen} order={detailOrder} onClose={closeDetail} />
+        <OrderDetailModal
+          open={detailOpen}
+          order={detailOrder}
+          onClose={closeDetail}
+        />
       </div>
     </AdminLayout>
   );
@@ -525,11 +608,19 @@ function OrderDetailModal({ open, order, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
+    // ✅ blocca scroll pagina sotto
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKeyDown = (e) => {
       if (e.key === "Escape") onClose?.();
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -565,14 +656,20 @@ function OrderDetailModal({ open, order, onClose }) {
       .filter(Boolean)
       .join(", ") || "—";
 
+  // ✅ FIX SCROLL MOBILE: overlay scrollabile + card maxHeight + scroll interno
   const overlay = {
     position: "fixed",
     inset: 0,
     background: "rgba(0,0,0,0.55)",
-    display: "grid",
-    placeItems: "center",
     padding: 16,
     zIndex: 9999,
+
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
   };
 
   const card = {
@@ -582,7 +679,14 @@ function OrderDetailModal({ open, order, onClose }) {
     borderRadius: 16,
     border: `1px solid ${colors.borderSoft}`,
     boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
-    overflow: "hidden",
+
+    // importante: non superare viewport, poi scroll interno
+    maxHeight: "calc(100vh - 32px)",
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+
+    // mantieni estetica
+    overflowX: "hidden",
   };
 
   const header = {
@@ -595,6 +699,9 @@ function OrderDetailModal({ open, order, onClose }) {
     background:
       "radial-gradient(circle at top left, rgba(253,197,0,0.08), transparent 55%), " +
       colors.bgDeep,
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
   };
 
   const section = {
@@ -621,10 +728,24 @@ function OrderDetailModal({ open, order, onClose }) {
         background: colors.bgDeep,
       }}
     >
-      <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 4, color: colors.textSoft }}>
+      <div
+        style={{
+          fontSize: 12,
+          opacity: 0.75,
+          marginBottom: 4,
+          color: colors.textSoft,
+        }}
+      >
         {label}
       </div>
-      <div style={{ fontSize: 14, fontWeight: 900, wordBreak: "break-word", color: colors.text }}>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 900,
+          wordBreak: "break-word",
+          color: colors.text,
+        }}
+      >
         {safe(value)}
       </div>
     </div>
@@ -675,7 +796,10 @@ function OrderDetailModal({ open, order, onClose }) {
               Dettaglio Ordine {o.id ? `#${o.id}` : ""}
             </div>
             <div style={small}>
-              {badge(safe(o.payment_status || "—"), o.payment_status === "PAID" ? "ok" : "neutral")}{" "}
+              {badge(
+                safe(o.payment_status || "—"),
+                o.payment_status === "PAID" ? "ok" : "neutral"
+              )}{" "}
               {o.created_at ? `• ${safe(o.created_at)}` : ""}
             </div>
           </div>
@@ -691,10 +815,19 @@ function OrderDetailModal({ open, order, onClose }) {
           <div style={grid}>
             {row("Tipo", o.order_type || "SINGLE")}
             {row("Prodotto", o.product || o.product_code || o.license_type || "—")}
-            {row("Subtotale", o.subtotal_amount != null ? formatEuroValue(o.subtotal_amount) : "—")}
-            {row("Sconto", o.discount_amount != null ? formatEuroValue(o.discount_amount) : "—")}
+            {row(
+              "Subtotale",
+              o.subtotal_amount != null ? formatEuroValue(o.subtotal_amount) : "—"
+            )}
+            {row(
+              "Sconto",
+              o.discount_amount != null ? formatEuroValue(o.discount_amount) : "—"
+            )}
             {row("Totale", o.total_amount != null ? formatEuroValue(o.total_amount) : "—")}
-            {row("Metodo pagamento", `${safe(o.payment_method)}${o.provider ? ` · ${o.provider}` : ""}`)}
+            {row(
+              "Metodo pagamento",
+              `${safe(o.payment_method)}${o.provider ? ` · ${o.provider}` : ""}`
+            )}
             {row("Referral code", o.referral_code || "—")}
             {row("Partner ID", o.partner_id ?? "—")}
           </div>
@@ -714,7 +847,9 @@ function OrderDetailModal({ open, order, onClose }) {
           <h3 style={h}>Fatturazione</h3>
 
           <div style={{ marginTop: 10 }}>
-            {invoiceRequested ? badge("Fattura richiesta", "ok") : badge("Fattura non richiesta")}
+            {invoiceRequested
+              ? badge("Fattura richiesta", "ok")
+              : badge("Fattura non richiesta")}
           </div>
 
           <div style={grid}>
