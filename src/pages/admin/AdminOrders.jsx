@@ -206,6 +206,11 @@ export default function AdminOrders() {
                     <Th>Cliente</Th>
                     <Th>Partner</Th>
                     <Th>Tipo</Th>
+
+                    {/* ✅ NUOVO */}
+                    <Th>Fattura</Th>
+                    <Th>Intestatario</Th>
+
                     <Th>Subtotale</Th>
                     <Th>Sconto</Th>
                     <Th>Totale</Th>
@@ -223,6 +228,21 @@ export default function AdminOrders() {
                     const hasDiscount =
                       Number(discount || 0) > 0 &&
                       (o.referral_code || o.partner_id != null);
+
+                    // ✅ Fatturazione (accetta più nomi per retrocompatibilità)
+                    const invoiceRequested = Boolean(
+                      o.invoice_requested ??
+                        o.request_invoice ??
+                        o.billing_requested ??
+                        false
+                    );
+
+                    const invoiceIntestatario =
+                      o.invoice_intestatario ??
+                      o.billing_company_name ??
+                      o.billing_company ??
+                      o.company_name ??
+                      "—";
 
                     return (
                       <tr key={o.id}>
@@ -302,6 +322,40 @@ export default function AdminOrders() {
                         </Td>
 
                         <Td>{o.order_type || "SINGLE"}</Td>
+
+                        {/* ✅ NUOVO: Fattura */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "2px 8px",
+                                borderRadius: "999px",
+                                background: "rgba(253,197,0,0.12)",
+                                border: `1px solid ${colors.accentStrongBorder}`,
+                                color: colors.accent,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Sì
+                            </span>
+                          ) : (
+                            <span style={{ opacity: 0.7, color: colors.textSoft }}>
+                              No
+                            </span>
+                          )}
+                        </Td>
+
+                        {/* ✅ NUOVO: Intestatario (solo se fattura richiesta) */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "inherit" }}>
+                              {invoiceIntestatario}
+                            </span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
 
                         <Td>{subtotal != null ? formatEuro(subtotal) : "—"}</Td>
                         <Td>{discount != null ? formatEuro(discount) : "—"}</Td>
