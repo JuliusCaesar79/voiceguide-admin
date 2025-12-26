@@ -18,6 +18,20 @@ export default function AdminOrders() {
     toDate: null,
   });
 
+  // ✅ Modal state
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailOrder, setDetailOrder] = useState(null);
+
+  const openDetail = (order) => {
+    setDetailOrder(order);
+    setDetailOpen(true);
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setDetailOrder(null);
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -210,6 +224,9 @@ export default function AdminOrders() {
                     <Th>Costo Agora</Th>
                     <Th>Margine</Th>
                     <Th>Pagamento</Th>
+
+                    {/* ✅ new */}
+                    <Th>Azioni</Th>
                   </tr>
                 </thead>
 
@@ -438,6 +455,27 @@ export default function AdminOrders() {
                         <Td>
                           <PaymentBadge status={o.payment_status} method={o.payment_method} />
                         </Td>
+
+                        {/* ✅ AZIONI */}
+                        <Td styleOverride={{ whiteSpace: "nowrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => openDetail(o)}
+                            style={{
+                              padding: "8px 10px",
+                              borderRadius: 12,
+                              border: `1px solid ${colors.borderSoft}`,
+                              background:
+                                "radial-gradient(circle at top left, rgba(253,197,0,0.14), transparent 55%), " +
+                                colors.bgDeep,
+                              color: colors.text,
+                              fontWeight: 900,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Dettaglio
+                          </button>
+                        </Td>
                       </tr>
                     );
                   })}
@@ -457,10 +495,250 @@ export default function AdminOrders() {
             </div>
           )}
         </div>
+
+        {/* ✅ MODAL DETTAGLIO */}
+        <OrderDetailModal open={detailOpen} order={detailOrder} onClose={closeDetail} />
       </div>
     </AdminLayout>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* ✅ Modal dettaglio ordine                                           */
+/* ------------------------------------------------------------------ */
+
+function safe(v) {
+  if (v === null || v === undefined || v === "") return "—";
+  return String(v);
+}
+
+function formatEuroValue(value) {
+  if (value === null || value === undefined) return "—";
+  const num = typeof value === "number" ? value : Number(value || 0);
+  if (Number.isNaN(num)) return safe(value);
+  return `${num.toFixed(2)} €`;
+}
+
+function OrderDetailModal({ open, order, onClose }) {
+  const isOpen = Boolean(open && order);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const o = order;
+
+  const invoiceRequested = Boolean(
+    o.invoice_requested ?? o.request_invoice ?? o.billing_requested ?? false
+  );
+  const bd = o.billing_details || null;
+
+  const invoiceIntestatario =
+    (bd?.company_name ||
+      o.invoice_intestatario ||
+      o.billing_company_name ||
+      o.billing_company ||
+      o.company_name ||
+      "")?.trim() || "—";
+
+  const invoiceCountry = (bd?.country || o.invoice_country || "")?.trim() || "—";
+  const invoiceVat = (bd?.vat_number || "")?.trim() || "—";
+  const invoiceTaxCode = (bd?.tax_code || "")?.trim() || "—";
+  const invoiceSdi = (bd?.sdi_code || "")?.trim() || "—";
+  const invoicePec = (bd?.pec || "")?.trim() || "—";
+
+  const invoiceAddressLine = (bd?.address || "")?.trim();
+  const invoiceCity = (bd?.city || "")?.trim();
+  const invoiceZip = (bd?.zip_code || "")?.trim();
+  const invoiceProv = (bd?.province || "")?.trim();
+
+  const invoiceAddress =
+    [invoiceAddressLine, invoiceZip, invoiceCity, invoiceProv]
+      .filter(Boolean)
+      .join(", ") || "—";
+
+  const overlay = {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.55)",
+    display: "grid",
+    placeItems: "center",
+    padding: 16,
+    zIndex: 9999,
+  };
+
+  const card = {
+    width: "100%",
+    maxWidth: 820,
+    background: colors.card,
+    borderRadius: 16,
+    border: `1px solid ${colors.borderSoft}`,
+    boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+    overflow: "hidden",
+  };
+
+  const header = {
+    padding: 16,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    borderBottom: `1px solid ${colors.borderSoft}`,
+    background:
+      "radial-gradient(circle at top left, rgba(253,197,0,0.08), transparent 55%), " +
+      colors.bgDeep,
+  };
+
+  const section = {
+    padding: 16,
+    borderBottom: `1px solid ${colors.borderSoft}`,
+  };
+
+  const h = { margin: 0, fontSize: 16, fontWeight: 950, color: colors.text };
+  const small = { fontSize: 12, opacity: 0.8, color: colors.textSoft };
+
+  const grid = {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 12,
+    marginTop: 12,
+  };
+
+  const row = (label, value) => (
+    <div
+      style={{
+        border: `1px solid ${colors.borderSoft}`,
+        borderRadius: 12,
+        padding: 12,
+        background: colors.bgDeep,
+      }}
+    >
+      <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 4, color: colors.textSoft }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 900, wordBreak: "break-word", color: colors.text }}>
+        {safe(value)}
+      </div>
+    </div>
+  );
+
+  const closeBtn = {
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: `1px solid ${colors.borderSoft}`,
+    background: colors.card,
+    fontWeight: 950,
+    cursor: "pointer",
+    color: colors.text,
+  };
+
+  const badge = (text, kind = "neutral") => {
+    const isOk = kind === "ok";
+    return (
+      <span
+        style={{
+          fontSize: "0.75rem",
+          padding: "3px 10px",
+          borderRadius: "999px",
+          background: isOk ? "rgba(34,197,94,0.15)" : "rgba(253,197,0,0.12)",
+          border: isOk
+            ? "1px solid rgba(34,197,94,0.7)"
+            : `1px solid ${colors.accentStrongBorder}`,
+          color: isOk ? "#bbf7d0" : colors.accent,
+          whiteSpace: "nowrap",
+          fontWeight: 900,
+        }}
+      >
+        {text}
+      </span>
+    );
+  };
+
+  const onOverlayClick = (e) => {
+    if (e.target === e.currentTarget) onClose?.();
+  };
+
+  return (
+    <div style={overlay} onClick={onOverlayClick}>
+      <div style={card}>
+        <div style={header}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={{ fontSize: 18, fontWeight: 950, color: colors.text }}>
+              Dettaglio Ordine {o.id ? `#${o.id}` : ""}
+            </div>
+            <div style={small}>
+              {badge(safe(o.payment_status || "—"), o.payment_status === "PAID" ? "ok" : "neutral")}{" "}
+              {o.created_at ? `• ${safe(o.created_at)}` : ""}
+            </div>
+          </div>
+
+          <button onClick={onClose} style={closeBtn}>
+            Chiudi ✕
+          </button>
+        </div>
+
+        {/* ORDINE */}
+        <div style={section}>
+          <h3 style={h}>Ordine</h3>
+          <div style={grid}>
+            {row("Tipo", o.order_type || "SINGLE")}
+            {row("Prodotto", o.product || o.product_code || o.license_type || "—")}
+            {row("Subtotale", o.subtotal_amount != null ? formatEuroValue(o.subtotal_amount) : "—")}
+            {row("Sconto", o.discount_amount != null ? formatEuroValue(o.discount_amount) : "—")}
+            {row("Totale", o.total_amount != null ? formatEuroValue(o.total_amount) : "—")}
+            {row("Metodo pagamento", `${safe(o.payment_method)}${o.provider ? ` · ${o.provider}` : ""}`)}
+            {row("Referral code", o.referral_code || "—")}
+            {row("Partner ID", o.partner_id ?? "—")}
+          </div>
+        </div>
+
+        {/* CLIENTE */}
+        <div style={section}>
+          <h3 style={h}>Cliente</h3>
+          <div style={grid}>
+            {row("Email", o.buyer_email || "—")}
+            {row("WhatsApp", o.buyer_whatsapp || "—")}
+          </div>
+        </div>
+
+        {/* FATTURAZIONE */}
+        <div style={section}>
+          <h3 style={h}>Fatturazione</h3>
+
+          <div style={{ marginTop: 10 }}>
+            {invoiceRequested ? badge("Fattura richiesta", "ok") : badge("Fattura non richiesta")}
+          </div>
+
+          <div style={grid}>
+            {row("Intestatario", invoiceRequested ? invoiceIntestatario : "—")}
+            {row("Paese", invoiceRequested ? invoiceCountry : "—")}
+            {row("P.IVA / VAT", invoiceRequested ? invoiceVat : "—")}
+            {row("Codice Fiscale", invoiceRequested ? invoiceTaxCode : "—")}
+            {row("SDI", invoiceRequested ? invoiceSdi : "—")}
+            {row("PEC", invoiceRequested ? invoicePec : "—")}
+            {row("Indirizzo", invoiceRequested ? invoiceAddress : "—")}
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.78, color: colors.textSoft }}>
+            Nota: i dati provengono da <b>billing_details</b> (quando presenti) con fallback sui campi legacy.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* UI atoms                                                            */
+/* ------------------------------------------------------------------ */
 
 function MiniStat({ label, value }) {
   return (
@@ -532,7 +810,7 @@ function Th({ children }) {
   );
 }
 
-function Td({ children }) {
+function Td({ children, styleOverride }) {
   return (
     <td
       style={{
@@ -542,6 +820,7 @@ function Td({ children }) {
         verticalAlign: "top",
         color: colors.text,
         whiteSpace: "nowrap",
+        ...(styleOverride || {}),
       }}
     >
       {children}
