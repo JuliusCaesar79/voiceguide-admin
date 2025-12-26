@@ -124,13 +124,7 @@ export default function AdminOrders() {
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "14px",
-            }}
-          >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "14px" }}>
             <MiniStat
               label="Numero ordini"
               value={summary.totalCount || orders.length || 0}
@@ -179,13 +173,7 @@ export default function AdminOrders() {
           {loading && <p>Caricamento ordini...</p>}
 
           {!loading && orders.length === 0 && !error && (
-            <p
-              style={{
-                opacity: 0.8,
-                fontSize: "0.9rem",
-                color: colors.textSoft,
-              }}
-            >
+            <p style={{ opacity: 0.8, fontSize: "0.9rem", color: colors.textSoft }}>
               Nessun ordine trovato nel periodo selezionato.
             </p>
           )}
@@ -207,9 +195,14 @@ export default function AdminOrders() {
                     <Th>Partner</Th>
                     <Th>Tipo</Th>
 
-                    {/* ✅ NUOVO */}
                     <Th>Fattura</Th>
                     <Th>Intestatario</Th>
+                    <Th>Paese</Th>
+                    <Th>P.IVA / VAT</Th>
+                    <Th>Codice Fiscale</Th>
+                    <Th>SDI</Th>
+                    <Th>PEC</Th>
+                    <Th>Indirizzo</Th>
 
                     <Th>Subtotale</Th>
                     <Th>Sconto</Th>
@@ -219,6 +212,7 @@ export default function AdminOrders() {
                     <Th>Pagamento</Th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {orders.map((o) => {
                     const subtotal = o.subtotal_amount;
@@ -229,7 +223,7 @@ export default function AdminOrders() {
                       Number(discount || 0) > 0 &&
                       (o.referral_code || o.partner_id != null);
 
-                    // ✅ Fatturazione (accetta più nomi per retrocompatibilità)
+                    // ✅ Fatturazione (retrocompat)
                     const invoiceRequested = Boolean(
                       o.invoice_requested ??
                         o.request_invoice ??
@@ -237,12 +231,32 @@ export default function AdminOrders() {
                         false
                     );
 
+                    // ✅ Dettagli fatturazione (nuovo payload backend)
+                    const bd = o.billing_details || null;
+
                     const invoiceIntestatario =
-                      o.invoice_intestatario ??
-                      o.billing_company_name ??
-                      o.billing_company ??
-                      o.company_name ??
-                      "—";
+                      (bd?.company_name ||
+                        o.invoice_intestatario ||
+                        o.billing_company_name ||
+                        o.billing_company ||
+                        o.company_name ||
+                        "")?.trim() || "—";
+
+                    const invoiceCountry = (bd?.country || o.invoice_country || "")?.trim() || "—";
+                    const invoiceVat = (bd?.vat_number || "")?.trim() || "—";
+                    const invoiceTaxCode = (bd?.tax_code || "")?.trim() || "—";
+                    const invoiceSdi = (bd?.sdi_code || "")?.trim() || "—";
+                    const invoicePec = (bd?.pec || "")?.trim() || "—";
+
+                    const invoiceAddressLine = (bd?.address || "")?.trim();
+                    const invoiceCity = (bd?.city || "")?.trim();
+                    const invoiceZip = (bd?.zip_code || "")?.trim();
+                    const invoiceProv = (bd?.province || "")?.trim();
+
+                    const invoiceAddress =
+                      [invoiceAddressLine, invoiceZip, invoiceCity, invoiceProv]
+                        .filter(Boolean)
+                        .join(", ") || "—";
 
                     return (
                       <tr key={o.id}>
@@ -323,7 +337,7 @@ export default function AdminOrders() {
 
                         <Td>{o.order_type || "SINGLE"}</Td>
 
-                        {/* ✅ NUOVO: Fattura */}
+                        {/* Fattura */}
                         <Td>
                           {invoiceRequested ? (
                             <span
@@ -346,12 +360,64 @@ export default function AdminOrders() {
                           )}
                         </Td>
 
-                        {/* ✅ NUOVO: Intestatario (solo se fattura richiesta) */}
+                        {/* Intestatario */}
                         <Td>
                           {invoiceRequested ? (
-                            <span style={{ fontFamily: "inherit" }}>
-                              {invoiceIntestatario}
-                            </span>
+                            <span>{invoiceIntestatario}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* Paese */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "monospace" }}>{invoiceCountry}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* VAT */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "monospace" }}>{invoiceVat}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* CF */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "monospace" }}>{invoiceTaxCode}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* SDI */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "monospace" }}>{invoiceSdi}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* PEC */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ fontFamily: "monospace" }}>{invoicePec}</span>
+                          ) : (
+                            <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
+                          )}
+                        </Td>
+
+                        {/* Indirizzo */}
+                        <Td>
+                          {invoiceRequested ? (
+                            <span style={{ whiteSpace: "normal" }}>{invoiceAddress}</span>
                           ) : (
                             <span style={{ opacity: 0.6, color: colors.textSoft }}>—</span>
                           )}
@@ -370,16 +436,24 @@ export default function AdminOrders() {
                         <Td>{o.margin != null ? formatEuro(o.margin) : "—"}</Td>
 
                         <Td>
-                          <PaymentBadge
-                            status={o.payment_status}
-                            method={o.payment_method}
-                          />
+                          <PaymentBadge status={o.payment_status} method={o.payment_method} />
                         </Td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: "0.8rem",
+                  opacity: 0.75,
+                  color: colors.textSoft,
+                }}
+              >
+                Nota: i campi fatturazione sono mostrati solo quando “Fattura = Sì”.
+              </div>
             </div>
           )}
         </div>
@@ -411,13 +485,7 @@ function MiniStat({ label, value }) {
       >
         {label}
       </div>
-      <div
-        style={{
-          fontSize: "0.95rem",
-          fontWeight: 600,
-          color: colors.accent,
-        }}
-      >
+      <div style={{ fontSize: "0.95rem", fontWeight: 600, color: colors.accent }}>
         {value}
       </div>
     </div>
@@ -433,9 +501,7 @@ function PaymentBadge({ status, method }) {
         fontSize: "0.8rem",
         padding: "3px 10px",
         borderRadius: "999px",
-        background: isPaid
-          ? "rgba(34,197,94,0.15)"
-          : "rgba(148,163,184,0.15)",
+        background: isPaid ? "rgba(34,197,94,0.15)" : "rgba(148,163,184,0.15)",
         border: isPaid
           ? "1px solid rgba(34,197,94,0.7)"
           : `1px solid ${colors.borderSoft}`,
