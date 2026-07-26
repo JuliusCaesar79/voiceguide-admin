@@ -93,7 +93,7 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Errore Dashboard Admin:", err);
-      setError("Impossibile caricare il riepilogo generale dell'Impero.");
+      setError("Impossibile caricare il riepilogo generale.");
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
         >
           <div>
             <h1 style={{ fontSize: "1.7rem", marginBottom: "0.3rem" }}>
-              Benvenuto Console!
+              Benvenuto nella Console
             </h1>
             <p
               style={{
@@ -143,8 +143,8 @@ export default function AdminDashboard() {
                 color: colors.textSoft,
               }}
             >
-              Questa è la cabina di regia dell&apos;Impero VoiceGuide: qui hai a colpo
-              d&apos;occhio ordini, partner e stato dei payout verso i tuoi alleati.
+              Il pannello di controllo di VoiceGuide AirLink: qui trovi a colpo
+              d&apos;occhio ordini, partner e stato dei payout.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: "14px",
           }}
         >

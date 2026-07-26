@@ -4,17 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../api/client"; // stesso pattern delle altre pagine
-
-const colors = {
-  bg: "#0b0b0b",
-  card: "#111",
-  text: "#fff",
-  muted: "rgba(255,255,255,0.7)",
-  border: "rgba(255,255,255,0.12)",
-  accent: "#FDC500",
-  danger: "#ff4d4f",
-  ok: "#2ecc71",
-};
+import { colors } from "../../theme/adminTheme";
+import Modal from "../../components/admin/Modal";
+import { modalButtonStyles } from "../../components/admin/modalStyles";
 
 export default function AdminTrialRequests() {
   const navigate = useNavigate();
@@ -41,6 +33,9 @@ export default function AdminTrialRequests() {
 
   // Reject
   const [rejectReason, setRejectReason] = useState("");
+
+  // Esito emissione trial (sostituisce alert())
+  const [issuedInfo, setIssuedInfo] = useState(null); // { code, exp }
 
   async function load() {
     setLoading(true);
@@ -96,19 +91,19 @@ export default function AdminTrialRequests() {
         send_email: !!issueForm.send_email,
       });
 
-      // UX: mostra subito un alert con codice + scadenza
+      // UX: mostra subito l'esito con codice + scadenza
       const code = res?.data?.license_code;
       const exp = res?.data?.expires_at_iso;
+      let copied = false;
 
       if (code) {
         try {
           await navigator.clipboard.writeText(code);
+          copied = true;
         } catch (_) {}
-        alert(`✅ Trial emessa!\n\nCodice: ${code}\nScadenza: ${exp || "-"}\n\n(Codice copiato negli appunti se possibile)`);
-      } else {
-        alert("✅ Trial emessa!");
       }
 
+      setIssuedInfo({ code: code || null, exp: exp || null, copied });
       setIssuingId(null);
       await load();
     } catch (e) {
@@ -346,6 +341,61 @@ export default function AdminTrialRequests() {
             </div>
           </div>
         ) : null}
+
+        {/* --- Esito emissione trial --- */}
+        <Modal
+          open={Boolean(issuedInfo)}
+          onClose={() => setIssuedInfo(null)}
+          title="Trial emessa"
+          subtitle={
+            issuedInfo?.code
+              ? issuedInfo.copied
+                ? "Codice copiato negli appunti."
+                : "Copia il codice manualmente, non è stato possibile copiarlo automaticamente."
+              : ""
+          }
+        >
+          {issuedInfo && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
+              {issuedInfo.code && (
+                <div>
+                  <div style={{ fontSize: 12, opacity: 0.75, color: colors.textSoft, marginBottom: 4 }}>
+                    Codice
+                  </div>
+                  <div
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: `1px solid ${colors.accentBorder}`,
+                      background: colors.bgDeep,
+                      color: colors.accent,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {issuedInfo.code}
+                  </div>
+                </div>
+              )}
+
+              {issuedInfo.exp && (
+                <div>
+                  <div style={{ fontSize: 12, opacity: 0.75, color: colors.textSoft, marginBottom: 4 }}>
+                    Scadenza
+                  </div>
+                  <div style={{ color: colors.text }}>{issuedInfo.exp}</div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+                <button onClick={() => setIssuedInfo(null)} style={modalButtonStyles.primary}>
+                  Chiudi
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </AdminLayout>
   );
@@ -373,7 +423,7 @@ const styles = {
   },
   subtitle: {
     margin: "6px 0 0",
-    color: colors.muted,
+    color: colors.textSoft,
     fontSize: 14,
     maxWidth: 760,
     lineHeight: 1.4,
@@ -402,13 +452,13 @@ const styles = {
     gridColumn: "1 / -1",
   },
   label: {
-    color: colors.muted,
+    color: colors.textSoft,
     fontSize: 12,
   },
   input: {
     padding: "10px 12px",
     borderRadius: 12,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     background: colors.card,
     color: colors.text,
     outline: "none",
@@ -416,7 +466,7 @@ const styles = {
   textarea: {
     padding: "10px 12px",
     borderRadius: 12,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     background: colors.card,
     color: colors.text,
     outline: "none",
@@ -425,19 +475,19 @@ const styles = {
   select: {
     padding: "10px 12px",
     borderRadius: 12,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     background: colors.card,
     color: colors.text,
     outline: "none",
   },
   card: {
     background: colors.card,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     borderRadius: 16,
     padding: 14,
   },
   muted: {
-    color: colors.muted,
+    color: colors.textSoft,
     fontSize: 14,
   },
   tableWrap: {
@@ -450,22 +500,22 @@ const styles = {
   },
   th: {
     textAlign: "left",
-    color: colors.muted,
+    color: colors.textSoft,
     fontSize: 12,
     padding: "10px 10px",
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${colors.borderSoft}`,
     fontWeight: 600,
   },
   thRight: {
     textAlign: "right",
-    color: colors.muted,
+    color: colors.textSoft,
     fontSize: 12,
     padding: "10px 10px",
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${colors.borderSoft}`,
     fontWeight: 600,
   },
   tr: {
-    borderBottom: `1px solid ${colors.border}`,
+    borderBottom: `1px solid ${colors.borderSoft}`,
   },
   td: {
     padding: "10px 10px",
@@ -481,7 +531,7 @@ const styles = {
     textAlign: "right",
   },
   msg: {
-    color: colors.muted,
+    color: colors.textSoft,
     display: "inline-block",
     maxWidth: 520,
     whiteSpace: "nowrap",
@@ -505,7 +555,7 @@ const styles = {
   btnGhost: {
     padding: "10px 14px",
     borderRadius: 12,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     background: "transparent",
     color: colors.text,
     fontWeight: 600,
@@ -563,7 +613,7 @@ const styles = {
     width: "100%",
     maxWidth: 640,
     background: colors.card,
-    border: `1px solid ${colors.border}`,
+    border: `1px solid ${colors.borderSoft}`,
     borderRadius: 18,
     padding: 16,
   },

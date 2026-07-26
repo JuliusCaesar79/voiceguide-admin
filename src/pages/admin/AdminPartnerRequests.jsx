@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../api/client";
 import { colors } from "../../theme/adminTheme";
+import Modal from "../../components/admin/Modal";
+import { modalButtonStyles } from "../../components/admin/modalStyles";
 
 const TIER_DEFAULT = { BASE: 10, PRO: 15, ELITE: 20 };
 
@@ -110,16 +112,23 @@ export default function AdminPartnerRequests() {
     }
   };
 
-  const reject = async (id) => {
+  const [rejectDialog, setRejectDialog] = useState(null); // { req }
+
+  const askReject = (req) => {
     setError("");
     setOk("");
-    const sure = window.confirm("Confermi il rifiuto della richiesta?");
-    if (!sure) return;
+    setRejectDialog({ req });
+  };
 
-    setBusyId(id);
+  const confirmReject = async () => {
+    const req = rejectDialog?.req;
+    if (!req?.id) return;
+
+    setBusyId(req.id);
     try {
-      await apiClient.post(`/admin/partner-requests/${id}/reject`);
-      setOk("Richiesta rifiutata ✅");
+      await apiClient.post(`/admin/partner-requests/${req.id}/reject`);
+      setOk("Richiesta rifiutata.");
+      setRejectDialog(null);
       await fetchRows();
     } catch (e) {
       console.error(e);
@@ -234,7 +243,7 @@ export default function AdminPartnerRequests() {
 
                 <button
                   disabled={r.status !== "PENDING" || busyId === r.id}
-                  onClick={() => reject(r.id)}
+                  onClick={() => askReject(r)}
                   style={styles.btnDanger}
                 >
                   {busyId === r.id ? "..." : "Rifiuta"}
@@ -296,6 +305,33 @@ export default function AdminPartnerRequests() {
             </div>
           </div>
         )}
+
+        {/* Dialogo conferma rifiuto */}
+        <Modal
+          open={Boolean(rejectDialog)}
+          onClose={() => setRejectDialog(null)}
+          title="Rifiuta richiesta"
+          subtitle={
+            rejectDialog?.req
+              ? `Confermi il rifiuto della richiesta di ${rejectDialog.req.name || rejectDialog.req.email}?`
+              : ""
+          }
+        >
+          {rejectDialog && (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+              <button onClick={() => setRejectDialog(null)} style={modalButtonStyles.secondary}>
+                Annulla
+              </button>
+              <button
+                onClick={confirmReject}
+                style={modalButtonStyles.danger}
+                disabled={busyId === rejectDialog.req?.id}
+              >
+                {busyId === rejectDialog.req?.id ? "..." : "Conferma rifiuto"}
+              </button>
+            </div>
+          )}
+        </Modal>
       </div>
     </AdminLayout>
   );
@@ -387,8 +423,8 @@ const styles = {
     border: "none",
     cursor: "pointer",
     fontWeight: 800,
-    background: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
-    color: "#1F2933",
+    background: colors.accentGradient,
+    color: colors.accentButtonText,
     boxShadow: "0 12px 35px rgba(253,197,0,0.35)",
   },
 

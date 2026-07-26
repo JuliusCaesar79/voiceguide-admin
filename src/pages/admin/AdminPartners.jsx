@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../api/client";
 import { colors } from "../../theme/adminTheme";
+import Modal from "../../components/admin/Modal";
+import { modalButtonStyles, modalFieldStyles } from "../../components/admin/modalStyles";
 
 const TIER_DEFAULT = { BASE: 10, PRO: 15, ELITE: 20 };
 
@@ -16,6 +18,12 @@ export default function AdminPartners() {
   const [ok, setOk] = useState("");
 
   const [filter, setFilter] = useState("ALL"); // ALL | ACTIVE | INACTIVE
+
+  // ---- Dialoghi personalizzati (al posto di prompt/confirm nativi) ----
+  const [tierDialog, setTierDialog] = useState(null); // { partner, tier, commissionOverride }
+  const [reasonDialog, setReasonDialog] = useState(null); // { partner, reason }
+  const [reactivateDialog, setReactivateDialog] = useState(null); // { partner }
+  const [tierError, setTierError] = useState("");
 
   const fetchPartners = async () => {
     setError("");
@@ -67,82 +75,102 @@ export default function AdminPartners() {
     e?.message ||
     fallback;
 
-  const onChangeTier = async (partner) => {
+  const onChangeTier = (partner) => {
     if (!partner?.id) return;
     setError("");
     setOk("");
+    setTierError("");
 
     const currentTier = String(partner.partner_type || "BASE").toUpperCase();
+    setTierDialog({
+      partner,
+      tier: TIER_DEFAULT[currentTier] ? currentTier : "BASE",
+      commissionOverride: "",
+    });
+  };
 
-    const newTierRaw = window.prompt(
-      "Imposta nuovo tier (BASE / PRO / ELITE):",
-      currentTier
-    );
-    if (newTierRaw === null) return;
+  const closeTierDialog = () => {
+    setTierDialog(null);
+    setTierError("");
+  };
 
-    const newTier = String(newTierRaw).trim().toUpperCase();
-    if (!TIER_DEFAULT[newTier]) {
-      setError("Tier non valido. Usa BASE, PRO o ELITE.");
-      return;
-    }
+  const submitTierChange = async () => {
+    if (!tierDialog?.partner?.id) return;
+    setTierError("");
 
-    const overrideRaw = window.prompt(
-      `Commissione override % (vuoto = default ${TIER_DEFAULT[newTier]}%):`,
-      ""
-    );
-    if (overrideRaw === null) return;
-
+    const newTier = tierDialog.tier;
     const params = { tier: newTier };
-    if (overrideRaw.trim() !== "") {
-      const val = Number(overrideRaw.replace(",", "."));
+
+    if (tierDialog.commissionOverride.trim() !== "") {
+      const val = Number(tierDialog.commissionOverride.replace(",", "."));
       if (Number.isNaN(val) || val < 0 || val > 100) {
-        setError("Commissione non valida (0-100).");
+        setTierError("Commissione non valida (0-100).");
         return;
       }
       params.commission_pct = val;
     }
 
-    setBusyId(partner.id);
+    const partnerId = tierDialog.partner.id;
+    setBusyId(partnerId);
     try {
-      await apiClient.patch(`/admin/partners/${partner.id}/tier`, null, { params });
-      setOk(`Tier aggiornato a ${newTier} ✅`);
+      await apiClient.patch(`/admin/partners/${partnerId}/tier`, null, { params });
+      setOk(`Tier aggiornato a ${newTier}.`);
+      closeTierDialog();
       await fetchPartners();
     } catch (e) {
       console.error(e);
-      setError(apiErrorMsg(e, "Errore aggiornamento tier."));
+      setTierError(apiErrorMsg(e, "Errore aggiornamento tier."));
     } finally {
       setBusyId(null);
     }
   };
 
-  const onToggleActive = async (partner) => {
+  const onToggleActive = (partner) => {
     if (!partner?.id) return;
     setError("");
     setOk("");
 
-    const next = !partner.is_active;
-
-    let reason = "";
-    if (!next) {
-      const reasonRaw = window.prompt(
-        "Motivo chiusura collaborazione (opzionale):",
-        ""
-      );
-      if (reasonRaw === null) return; // cancel
-      reason = reasonRaw;
+    if (partner.is_active) {
+      setReasonDialog({ partner, reason: "" });
     } else {
-      const sure = window.confirm("Confermi la RIATTIVAZIONE del partner?");
-      if (!sure) return;
+      setReactivateDialog({ partner });
     }
+  };
+
+  const submitDeactivate = async () => {
+    if (!reasonDialog?.partner?.id) return;
+    const partner = reasonDialog.partner;
 
     setBusyId(partner.id);
     try {
-      const params = { is_active: next };
-      if (reason && !next) params.reason = reason;
+      const params = { is_active: false };
+      if (reasonDialog.reason) params.reason = reasonDialog.reason;
 
       await apiClient.patch(`/admin/partners/${partner.id}/active`, null, { params });
 
-      setOk(next ? "Partner riattivato ✅" : "Collaborazione chiusa ✅");
+      setOk("Collaborazione chiusa.");
+      setReasonDialog(null);
+      await fetchPartners();
+    } catch (e) {
+      console.error(e);
+      setError(apiErrorMsg(e, "Errore aggiornamento stato partner."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const submitReactivate = async () => {
+    if (!reactivateDialog?.partner?.id) return;
+    const partner = reactivateDialog.partner;
+
+    setBusyId(partner.id);
+    try {
+      await apiClient.patch(`/admin/partners/${partner.id}/active`, null, {
+        params: { is_active: true },
+      });
+
+      setOk("Partner riattivato.");
+      setReactivateDialog(null);
       await fetchPartners();
     } catch (e) {
       console.error(e);
@@ -312,6 +340,126 @@ export default function AdminPartners() {
             </table>
           </div>
         )}
+
+        {/* Dialogo cambio tier */}
+        <Modal
+          open={Boolean(tierDialog)}
+          onClose={closeTierDialog}
+          title="Modifica tier partner"
+          subtitle={tierDialog?.partner ? `${tierDialog.partner.name} — ${tierDialog.partner.email}` : ""}
+        >
+          {tierDialog && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
+              <div>
+                <label style={modalFieldStyles.label}>Tier</label>
+                <select
+                  value={tierDialog.tier}
+                  onChange={(e) => setTierDialog({ ...tierDialog, tier: e.target.value })}
+                  style={modalFieldStyles.input}
+                >
+                  <option value="BASE">BASE (10%)</option>
+                  <option value="PRO">PRO (15%)</option>
+                  <option value="ELITE">ELITE (20%)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={modalFieldStyles.label}>
+                  Commissione override % (opzionale)
+                </label>
+                <input
+                  value={tierDialog.commissionOverride}
+                  onChange={(e) =>
+                    setTierDialog({ ...tierDialog, commissionOverride: e.target.value })
+                  }
+                  placeholder={`Default: ${TIER_DEFAULT[tierDialog.tier]}%`}
+                  style={modalFieldStyles.input}
+                />
+              </div>
+
+              {tierError && (
+                <p style={{ margin: 0, fontSize: "0.85rem", color: colors.dangerSoft }}>
+                  {tierError}
+                </p>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+                <button onClick={closeTierDialog} style={modalButtonStyles.secondary}>
+                  Annulla
+                </button>
+                <button
+                  onClick={submitTierChange}
+                  style={modalButtonStyles.primary}
+                  disabled={busyId === tierDialog.partner.id}
+                >
+                  {busyId === tierDialog.partner.id ? "..." : "Salva"}
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
+
+        {/* Dialogo chiusura collaborazione */}
+        <Modal
+          open={Boolean(reasonDialog)}
+          onClose={() => setReasonDialog(null)}
+          title="Chiudi collaborazione"
+          subtitle={reasonDialog?.partner ? `${reasonDialog.partner.name} — ${reasonDialog.partner.email}` : ""}
+        >
+          {reasonDialog && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
+              <div>
+                <label style={modalFieldStyles.label}>Motivo (opzionale)</label>
+                <textarea
+                  value={reasonDialog.reason}
+                  onChange={(e) => setReasonDialog({ ...reasonDialog, reason: e.target.value })}
+                  style={modalFieldStyles.textarea}
+                  placeholder="Es. richiesta del partner, inattività, ecc."
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+                <button onClick={() => setReasonDialog(null)} style={modalButtonStyles.secondary}>
+                  Annulla
+                </button>
+                <button
+                  onClick={submitDeactivate}
+                  style={modalButtonStyles.danger}
+                  disabled={busyId === reasonDialog.partner.id}
+                >
+                  {busyId === reasonDialog.partner.id ? "..." : "Chiudi collaborazione"}
+                </button>
+              </div>
+            </div>
+          )}
+        </Modal>
+
+        {/* Dialogo riattivazione */}
+        <Modal
+          open={Boolean(reactivateDialog)}
+          onClose={() => setReactivateDialog(null)}
+          title="Riattiva partner"
+          subtitle={
+            reactivateDialog?.partner
+              ? `Confermi la riattivazione di ${reactivateDialog.partner.name}?`
+              : ""
+          }
+        >
+          {reactivateDialog && (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+              <button onClick={() => setReactivateDialog(null)} style={modalButtonStyles.secondary}>
+                Annulla
+              </button>
+              <button
+                onClick={submitReactivate}
+                style={modalButtonStyles.primary}
+                disabled={busyId === reactivateDialog.partner.id}
+              >
+                {busyId === reactivateDialog.partner.id ? "..." : "Riattiva"}
+              </button>
+            </div>
+          )}
+        </Modal>
       </div>
     </AdminLayout>
   );
@@ -417,8 +565,8 @@ const styles = {
     border: "none",
     cursor: "pointer",
     fontWeight: 800,
-    background: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
-    color: "#1F2933",
+    background: colors.accentGradient,
+    color: colors.accentButtonText,
     boxShadow: "0 10px 28px rgba(253,197,0,0.25)",
     whiteSpace: "nowrap",
   },

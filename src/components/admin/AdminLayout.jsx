@@ -102,7 +102,7 @@ export default function AdminLayout({ children }) {
         </div>
         <div>
           <div style={styles.logoText}>VOICEGUIDE</div>
-          <div style={styles.logoSub}>AirLink Admin Console</div>
+          <div style={styles.logoSub}>Admin Console</div>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ export default function AdminLayout({ children }) {
             />
             <div>
               <div style={styles.topbarTitle}>VOICEGUIDE</div>
-              <div style={styles.topbarSub}>Admin</div>
+              <div style={styles.topbarSub}>Admin Console</div>
             </div>
           </div>
         </header>
@@ -202,7 +202,7 @@ export default function AdminLayout({ children }) {
                 />
                 <div>
                   <div style={styles.drawerTitle}>VOICEGUIDE</div>
-                  <div style={styles.drawerSub}>AirLink Admin</div>
+                  <div style={styles.drawerSub}>Admin Console</div>
                 </div>
               </div>
 

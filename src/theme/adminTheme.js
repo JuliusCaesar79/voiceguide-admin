@@ -25,4 +25,9 @@ export const colors = {
   danger: "#F87171",
   dangerSoft: "#FCA5A5",
   success: "#22C55E",
+  successSoft: "#BBF7D0",
+
+  // Bottoni primari (giallo)
+  accentGradient: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
+  accentButtonText: "#1F2933",
 };

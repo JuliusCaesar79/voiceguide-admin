@@ -106,7 +106,7 @@ export default function PartnerLogin() {
             {t("auth.footerLeft")}
           </span>
           <span style={styles.powered}>
-            {t("auth.poweredBy")} <strong>Virgilius</strong>
+            {t("auth.poweredBy")} <strong>VirgiliusLabs</strong>
           </span>
         </div>
       </div>
@@ -204,10 +204,10 @@ const styles = {
   button: {
     width: "100%",
     padding: "0.8rem",
-    background: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
+    background: colors.accentGradient,
     borderRadius: "999px",
     border: "none",
-    color: "#1F2933",
+    color: colors.accentButtonText,
     fontWeight: 700,
     cursor: "pointer",
     fontSize: "0.95rem",
