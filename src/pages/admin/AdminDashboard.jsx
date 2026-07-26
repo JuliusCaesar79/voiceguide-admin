@@ -29,6 +29,8 @@ export default function AdminDashboard() {
   const [pendingTrialRequests, setPendingTrialRequests] = useState(0);
 
   const fetchData = async () => {
+    const failedSections = [];
+
     try {
       setLoading(true);
       setError("");
@@ -44,6 +46,7 @@ export default function AdminDashboard() {
         });
       } catch (err) {
         console.warn("Errore caricamento ordini:", err);
+        failedSections.push("ordini");
       }
 
       // 2) PAYOUTS
@@ -56,6 +59,7 @@ export default function AdminDashboard() {
         setPayoutsSummary({ totalGenerated, totalPaid, totalBalance });
       } catch (err) {
         console.warn("Errore caricamento payouts:", err);
+        failedSections.push("payout");
       }
 
       // ✅ 3) PARTNER COUNT (COUNT endpoint → DB-safe)
@@ -69,6 +73,7 @@ export default function AdminDashboard() {
         setPartnersInactiveCount(Number(resInactive?.data?.count ?? 0));
       } catch (err) {
         console.warn("Errore conteggio partner:", err);
+        failedSections.push("partner");
       }
 
       // 4) PARTNER REQUESTS (PENDING)
@@ -80,6 +85,7 @@ export default function AdminDashboard() {
         setPendingPartnerRequests(items.length);
       } catch (err) {
         console.warn("Errore caricamento richieste partner:", err);
+        failedSections.push("richieste partner");
       }
 
       // 5) TRIAL REQUESTS (PENDING)
@@ -90,6 +96,13 @@ export default function AdminDashboard() {
         setPendingTrialRequests(Number(resTrialCount?.data?.count ?? 0));
       } catch (err) {
         console.warn("Errore caricamento richieste trial:", err);
+        failedSections.push("richieste trial");
+      }
+
+      if (failedSections.length > 0) {
+        setError(
+          `Alcuni dati non sono stati caricati (${failedSections.join(", ")}). Riprova con "Aggiorna".`
+        );
       }
     } catch (err) {
       console.error("Errore Dashboard Admin:", err);
@@ -164,6 +177,22 @@ export default function AdminDashboard() {
             Aggiorna
           </button>
         </div>
+
+        {/* Alert errore */}
+        {error && (
+          <div
+            style={{
+              background: colors.card,
+              borderRadius: "16px",
+              padding: "14px 18px",
+              border: `1px solid ${colors.danger}`,
+              color: colors.dangerSoft,
+              fontSize: "0.9rem",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         {/* TILE */}
         <div
