@@ -14,20 +14,16 @@ import AdminTrialRequests from "./pages/admin/AdminTrialRequests";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// --- PARTNER ---
-import PartnerLogin from "./pages/partner/PartnerLogin";
-import PartnerDashboard from "./pages/partner/PartnerDashboard";
-import PartnerOrders from "./pages/partner/PartnerOrders";
-import PartnerProtectedRoute from "./components/partner/PartnerProtectedRoute";
+const PARTNER_PORTAL_URL = "https://voiceguide-partner-production.up.railway.app";
+
+// Il portale partner ora vive in un progetto separato: chi arriva qui con un
+// vecchio link/segnalibro /partner/... viene mandato al nuovo sito invece di un 404.
+function PartnerRedirect() {
+  window.location.replace(PARTNER_PORTAL_URL + window.location.pathname);
+  return null;
+}
 
 function App() {
-  const defaultRedirect = () => {
-    const path = window.location.pathname || "";
-    if (path.startsWith("/partner")) return "/partner/login";
-    if (path.startsWith("/admin")) return "/admin/login";
-    return "/admin/login";
-  };
-
   return (
     <Router>
       <Routes>
@@ -107,27 +103,12 @@ function App() {
         {/* -------------------------- */}
         {/*          PARTNER           */}
         {/* -------------------------- */}
-        <Route path="/partner/login" element={<PartnerLogin />} />
-
-        <Route
-          path="/partner/dashboard"
-          element={
-            <PartnerProtectedRoute>
-              <PartnerDashboard />
-            </PartnerProtectedRoute>
-          }
-        />
-        <Route
-          path="/partner/orders"
-          element={
-            <PartnerProtectedRoute>
-              <PartnerOrders />
-            </PartnerProtectedRoute>
-          }
-        />
+        {/* Il portale partner vive ora nel suo progetto: qualunque vecchio link
+            /partner/... viene rimbalzato lì invece di dare 404. */}
+        <Route path="/partner/*" element={<PartnerRedirect />} />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to={defaultRedirect()} replace />} />
+        <Route path="*" element={<Navigate to="/admin/login" replace />} />
       </Routes>
     </Router>
   );
