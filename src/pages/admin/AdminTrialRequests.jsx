@@ -69,14 +69,14 @@ export default function AdminTrialRequests() {
   function openIssue(tr) {
     setError("");
     setIssuingId(tr.id);
-    setIssueForm((prev) => ({
-      ...prev,
-      notes: prev.notes || (tr.message ? `Trial request: ${tr.message}` : "Trial request from website"),
-      max_guests: prev.max_guests ?? 10,
-      duration_hours: prev.duration_hours ?? 24,
-      license_type: prev.license_type || "SINGLE",
+    setIssueForm({
+      notes: tr.message ? `Trial request: ${tr.message}` : "Trial request from website",
+      // Precompilato dal taglio scelto sul form pubblico, quando presente.
+      max_guests: tr.requested_max_guests || 10,
+      duration_hours: 24,
+      license_type: "SINGLE",
       send_email: true,
-    }));
+    });
   }
 
   async function doIssue() {
@@ -199,6 +199,7 @@ export default function AdminTrialRequests() {
                     <th style={styles.th}>Email</th>
                     <th style={styles.th}>Nome</th>
                     <th style={styles.th}>Lingua</th>
+                    <th style={styles.th}>Taglio</th>
                     <th style={styles.th}>Messaggio</th>
                     <th style={styles.thRight}>Azioni</th>
                   </tr>
@@ -210,6 +211,18 @@ export default function AdminTrialRequests() {
                       <td style={styles.td}><strong>{r.email}</strong></td>
                       <td style={styles.td}>{r.name || "-"}</td>
                       <td style={styles.td}>{(r.language || "-").toUpperCase()}</td>
+                      <td style={styles.td}>
+                        {r.requested_max_guests ? (
+                          <span>
+                            {r.requested_max_guests} ospiti
+                            {r.requested_max_guests === 5 && r.status === "ISSUED" ? (
+                              <span style={styles.autoBadge}>Automatico</span>
+                            ) : null}
+                          </span>
+                        ) : (
+                          <span style={styles.muted}>—</span>
+                        )}
+                      </td>
                       <td style={styles.td}>
                         <span style={styles.msg}>{r.message || "-"}</span>
                       </td>
@@ -537,6 +550,15 @@ const styles = {
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
+  },
+  autoBadge: {
+    marginLeft: 8,
+    padding: "2px 8px",
+    borderRadius: 999,
+    background: colors.accent,
+    color: "#000",
+    fontSize: 11,
+    fontWeight: 700,
   },
   rowBtns: {
     display: "flex",
