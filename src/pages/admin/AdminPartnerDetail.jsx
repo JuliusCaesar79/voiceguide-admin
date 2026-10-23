@@ -244,7 +244,7 @@ export default function AdminPartnerDetail() {
               colors.card,
             borderRadius: "16px",
             padding: "24px 28px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -391,7 +391,7 @@ export default function AdminPartnerDetail() {
             background: colors.card,
             borderRadius: "16px",
             padding: "24px 28px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -539,7 +539,7 @@ export default function AdminPartnerDetail() {
             background: colors.card,
             borderRadius: "16px",
             padding: "24px 28px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -798,7 +798,7 @@ function Td({ children }) {
     <td
       style={{
         padding: "8px 10px",
-        borderBottom: "1px solid rgba(30,41,59,0.8)",
+        borderBottom: "1px solid rgba(20,22,27,0.08)",
         opacity: 0.9,
         color: colors.text,
       }}

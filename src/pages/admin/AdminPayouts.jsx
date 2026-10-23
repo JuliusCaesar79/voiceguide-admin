@@ -64,7 +64,7 @@ export default function AdminPayouts() {
               colors.card,
             borderRadius: "16px",
             padding: "22px 26px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -89,7 +89,7 @@ export default function AdminPayouts() {
             background: colors.bgDeep,
             borderRadius: "16px",
             padding: "18px 22px",
-            boxShadow: "0 12px 35px rgba(0, 0, 0, 0.6)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
             display: "flex",
             gap: "18px",
@@ -130,7 +130,7 @@ export default function AdminPayouts() {
             background: colors.card,
             borderRadius: "16px",
             padding: "20px 24px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -245,10 +245,10 @@ export default function AdminPayouts() {
                         style={{
                           color:
                             (row.balance_due || 0) > 0
-                              ? "#bef264"
+                              ? "#3F7A0E"
                               : (row.balance_due || 0) < 0
-                              ? "#fecaca"
-                              : "#e5e7eb",
+                              ? "#B42318"
+                              : "#4A4F5A",
                           fontWeight: 600,
                         }}
                       >
@@ -348,7 +348,7 @@ function Td({ children }) {
     <td
       style={{
         padding: "8px 10px",
-        borderBottom: "1px solid rgba(30,41,59,0.8)",
+        borderBottom: "1px solid rgba(20,22,27,0.08)",
         opacity: 0.9,
         verticalAlign: "top",
         color: colors.text,

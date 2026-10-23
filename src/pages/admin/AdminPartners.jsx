@@ -490,7 +490,7 @@ const styles = {
       colors.card,
     borderRadius: 16,
     padding: "18px 18px",
-    boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     border: `1px solid ${colors.borderSoft}`,
     marginBottom: 12,
   },
@@ -608,7 +608,7 @@ const styles = {
   info: {
     padding: 12,
     borderRadius: 12,
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(20,22,27,0.03)",
     border: `1px solid ${colors.borderSoft}`,
     marginTop: 12,
     opacity: 0.9,
@@ -635,7 +635,7 @@ const styles = {
     background: colors.card,
     borderRadius: 16,
     border: `1px solid ${colors.borderSoft}`,
-    boxShadow: "0 18px 45px rgba(0, 0, 0, 0.55)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
   },
 
   table: { width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" },
@@ -652,7 +652,7 @@ const styles = {
 
   td: {
     padding: "10px 12px",
-    borderBottom: "1px solid rgba(30,41,59,0.8)",
+    borderBottom: "1px solid rgba(20,22,27,0.08)",
     opacity: 0.92,
     color: colors.text,
     verticalAlign: "middle",

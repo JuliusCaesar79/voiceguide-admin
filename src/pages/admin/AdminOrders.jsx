@@ -90,7 +90,7 @@ export default function AdminOrders() {
               colors.card,
             borderRadius: "16px",
             padding: "22px 26px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -114,7 +114,7 @@ export default function AdminOrders() {
             background: colors.bgDeep,
             borderRadius: "16px",
             padding: "16px 20px",
-            boxShadow: "0 12px 35px rgba(0, 0, 0, 0.6)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
             display: "flex",
             flexWrap: "wrap",
@@ -180,7 +180,7 @@ export default function AdminOrders() {
             background: colors.card,
             borderRadius: "16px",
             padding: "20px 24px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+            boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
             border: `1px solid ${colors.borderSoft}`,
           }}
         >
@@ -773,7 +773,7 @@ function OrderDetailModal({ open, order, onClose }) {
           border: isOk
             ? "1px solid rgba(34,197,94,0.7)"
             : `1px solid ${colors.accentStrongBorder}`,
-          color: isOk ? "#bbf7d0" : colors.accent,
+          color: isOk ? "#0E6B4C" : colors.accent,
           whiteSpace: "nowrap",
           fontWeight: 900,
         }}
@@ -918,7 +918,7 @@ function PaymentBadge({ status, method }) {
         border: isPaid
           ? "1px solid rgba(34,197,94,0.7)"
           : `1px solid ${colors.borderSoft}`,
-        color: isPaid ? "#bbf7d0" : "#e5e7eb",
+        color: isPaid ? "#0E6B4C" : "#4A4F5A",
         whiteSpace: "nowrap",
       }}
     >
@@ -950,7 +950,7 @@ function Td({ children, styleOverride }) {
     <td
       style={{
         padding: "8px 10px",
-        borderBottom: "1px solid rgba(30,41,59,0.8)",
+        borderBottom: "1px solid rgba(20,22,27,0.08)",
         opacity: 0.9,
         verticalAlign: "top",
         color: colors.text,

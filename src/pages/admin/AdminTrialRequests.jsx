@@ -615,7 +615,7 @@ const styles = {
   error: {
     background: "rgba(255,77,79,0.12)",
     border: "1px solid rgba(255,77,79,0.35)",
-    color: "#ffd1d1",
+    color: "#B42318",
     padding: "10px 12px",
     borderRadius: 12,
     marginBottom: 12,

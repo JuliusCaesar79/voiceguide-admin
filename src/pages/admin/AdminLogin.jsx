@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logoVGAirlink from "../../assets/logo-voiceguide-airlink.png";
+import logoVGAirlink from "../../assets/logo-voiceguide-airlink-trasparente.png";
 import { colors } from "../../theme/adminTheme";
 import apiClient from "../../api/client";
 
@@ -38,21 +38,11 @@ export default function AdminLogin() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.logoWrapper}>
-          <div style={styles.logoCircle}>
-            <img
-              src={logoVGAirlink}
-              alt="VoiceGuide AirLink"
-              style={styles.logoImage}
-            />
-          </div>
-          <div>
-            <div style={styles.logoText}>VOICEGUIDE</div>
-            <div style={styles.logoSub}>Admin Console</div>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <img src={logoVGAirlink} alt="VoiceGuide AirLink" style={{ height: 96, width: "auto" }} />
         </div>
 
-        <h1 style={styles.title}>Accesso Console</h1>
+        <h1 style={styles.title}>Accesso admin</h1>
         <p style={styles.subtitle}>Area riservata all’amministrazione</p>
 
         <form onSubmit={handleLogin} style={{ marginTop: "1.5rem" }}>
@@ -117,7 +107,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     background:
-      "radial-gradient(circle at top, #111827 0, #050816 36%, #020617 100%)",
+      "radial-gradient(90% 60% at 50% 18%, #FFF6DD 0%, #FBF1DC 45%, #F6E3C2 100%)",
     fontFamily:
       "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
@@ -127,7 +117,7 @@ const styles = {
       colors.bg,
     borderRadius: "20px",
     padding: "30px 32px 22px",
-    boxShadow: "0 22px 50px rgba(0, 0, 0, 0.75)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     border: `1px solid ${colors.accentBorder}`,
     maxWidth: "420px",
     width: "100%",
@@ -221,7 +211,7 @@ const styles = {
   },
   footer: {
     marginTop: "1.2rem",
-    borderTop: "1px solid rgba(15,23,42,0.9)",
+    borderTop: "1px solid rgba(20,22,27,0.08)",
     paddingTop: "0.6rem",
     display: "flex",
     justifyContent: "space-between",

@@ -367,7 +367,7 @@ const styles = {
     borderRadius: 16,
     padding: 16,
     border: `1px solid ${colors.accentBorder}`,
-    boxShadow: "0 18px 40px rgba(0,0,0,0.45)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     marginBottom: 12,
   },
 
@@ -392,7 +392,7 @@ const styles = {
     color: colors.text,
   },
 
-  line: { height: 1, background: "rgba(255,255,255,0.06)", margin: "12px 0" },
+  line: { height: 1, background: "rgba(20,22,27,0.08)", margin: "12px 0" },
 
   grid: {
     display: "grid",
@@ -408,7 +408,7 @@ const styles = {
     padding: 12,
     borderRadius: 12,
     border: `1px solid ${colors.borderSoft}`,
-    background: "rgba(255,255,255,0.03)",
+    background: "rgba(20,22,27,0.03)",
     lineHeight: 1.35,
     fontSize: 13,
     opacity: 0.95,
@@ -461,7 +461,7 @@ const styles = {
   info: {
     padding: 12,
     borderRadius: 12,
-    background: "rgba(255,255,255,0.04)",
+    background: "rgba(20,22,27,0.03)",
     border: `1px solid ${colors.borderSoft}`,
     marginBottom: 12,
     opacity: 0.85,
@@ -500,7 +500,7 @@ const styles = {
     border: `1px solid ${colors.accentBorder}`,
     borderRadius: 18,
     padding: 16,
-    boxShadow: "0 24px 60px rgba(0,0,0,0.55)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
   },
   modalTitle: { fontSize: 16, fontWeight: 900 },
   modalSub: { marginTop: 4, fontSize: 13, opacity: 0.75 },

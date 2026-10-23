@@ -1,33 +1,38 @@
 // src/theme/adminTheme.js
+// Restyle 2026-10: stile chiaro come il sito nuovo (fondo crema, schede
+// bianche, giallo VoiceGuide). Le chiavi restano quelle di prima, così tutte
+// le pagine prendono i colori nuovi senza toccarle una per una.
 
 export const colors = {
   // Brand
-  accent: "#FDC500", // giallo VoiceGuide
-  accentSoft: "rgba(253,197,0,0.14)",
-  accentBorder: "rgba(253,197,0,0.7)",
-  accentStrongBorder: "rgba(253,197,0,0.85)",
+  accent: "#FFC226", // giallo VoiceGuide
+  accentSoft: "rgba(255,194,38,0.18)",
+  accentBorder: "rgba(214,158,0,0.45)",
+  accentStrongBorder: "rgba(214,158,0,0.75)",
 
-  // Background
-  bg: "#050816", // sfondo app
-  bgDeep: "#020617",
-  card: "#0B1020",
+  // Sfondi
+  bg: "#FBF8F1", // fondo crema dell'app
+  bgDeep: "#F5EFE2", // campi, righe e riquadri interni
+  card: "#FFFFFF",
 
   // Testo
-  text: "#F9FAFB",
-  textMuted: "rgba(249,250,251,0.78)",
-  textSoft: "rgba(249,250,251,0.65)",
+  text: "#14161B",
+  textMuted: "#4A4F5A",
+  textSoft: "#5A5F6B",
 
   // Bordi & linee
-  borderSoft: "rgba(148,163,184,0.35)",
-  borderStrong: "rgba(31,41,55,0.9)",
+  borderSoft: "rgba(20,22,27,0.10)",
+  borderStrong: "rgba(20,22,27,0.18)",
 
   // Stati
-  danger: "#F87171",
-  dangerSoft: "#FCA5A5",
-  success: "#22C55E",
-  successSoft: "#BBF7D0",
+  danger: "#D92D20",
+  dangerSoft: "#B42318",
+  success: "#12805C",
+  successSoft: "#0E6B4C",
 
   // Bottoni primari (giallo)
-  accentGradient: "linear-gradient(135deg, #FDC500, #FBBF24, #E2AA00)",
-  accentButtonText: "#1F2933",
+  accentGradient: "linear-gradient(135deg, #FFC226, #FFD45C)",
+  accentButtonText: "#14161B",
 };
+
+export const fontFamily = "Sora, system-ui, -apple-system, 'Segoe UI', sans-serif";

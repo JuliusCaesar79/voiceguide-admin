@@ -1,365 +1,148 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
 import apiClient from "../../api/client";
 import { colors } from "../../theme/adminTheme";
+import { ArrowLink, Button, Card, PageHeader, Pill, Stat, dateTime, eur, ui } from "../../components/admin/ui";
+
+// Panoramica (restyle 2026-10): i numeri dell'ultima settimana, le cose da
+// fare e gli ultimi movimenti. Ogni sezione si carica per conto suo: se una
+// non risponde, le altre restano visibili.
+const DAY = 24 * 60 * 60 * 1000;
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [failed, setFailed] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [freeTours, setFreeTours] = useState(null);
+  const [pendingPartners, setPendingPartners] = useState(0);
+  const [pendingTrials, setPendingTrials] = useState(0);
+  const [balanceDue, setBalanceDue] = useState(0);
 
-  const [ordersSummary, setOrdersSummary] = useState({
-    totalCount: 0,
-    totalAmount: 0,
-  });
-
-  const [payoutsSummary, setPayoutsSummary] = useState({
-    totalGenerated: 0,
-    totalPaid: 0,
-    totalBalance: 0,
-  });
-
-  // ✅ partner counts (FIX DEFINITIVO)
-  const [partnersActiveCount, setPartnersActiveCount] = useState(0);
-  const [partnersInactiveCount, setPartnersInactiveCount] = useState(0);
-
-  const [pendingPartnerRequests, setPendingPartnerRequests] = useState(0);
-  const [pendingTrialRequests, setPendingTrialRequests] = useState(0);
-
-  const fetchData = async () => {
-    const failedSections = [];
-
-    try {
-      setLoading(true);
-      setError("");
-
-      // 1) ORDINI
-      try {
-        const resOrders = await apiClient.get("/admin/orders");
-        const data = resOrders.data || {};
-        const items = Array.isArray(data.items) ? data.items : [];
-        setOrdersSummary({
-          totalCount: data.total_count || items.length || 0,
-          totalAmount: data.total_amount || 0,
-        });
-      } catch (err) {
-        console.warn("Errore caricamento ordini:", err);
-        failedSections.push("ordini");
-      }
-
-      // 2) PAYOUTS
-      try {
-        const resPayouts = await apiClient.get("/admin/payouts/by-partner");
-        const rows = Array.isArray(resPayouts.data) ? resPayouts.data : [];
-        const totalGenerated = rows.reduce((s, r) => s + (r.total_generated || 0), 0);
-        const totalPaid = rows.reduce((s, r) => s + (r.total_paid || 0), 0);
-        const totalBalance = rows.reduce((s, r) => s + (r.balance_due || 0), 0);
-        setPayoutsSummary({ totalGenerated, totalPaid, totalBalance });
-      } catch (err) {
-        console.warn("Errore caricamento payouts:", err);
-        failedSections.push("payout");
-      }
-
-      // ✅ 3) PARTNER COUNT (COUNT endpoint → DB-safe)
-      try {
-        const [resActive, resInactive] = await Promise.all([
-          apiClient.get("/admin/partners/count", { params: { active: "true" } }),
-          apiClient.get("/admin/partners/count", { params: { active: "false" } }),
-        ]);
-
-        setPartnersActiveCount(Number(resActive?.data?.count ?? 0));
-        setPartnersInactiveCount(Number(resInactive?.data?.count ?? 0));
-      } catch (err) {
-        console.warn("Errore conteggio partner:", err);
-        failedSections.push("partner");
-      }
-
-      // 4) PARTNER REQUESTS (PENDING)
-      try {
-        const resReq = await apiClient.get("/admin/partner-requests", {
-          params: { status: "PENDING" },
-        });
-        const items = Array.isArray(resReq.data) ? resReq.data : [];
-        setPendingPartnerRequests(items.length);
-      } catch (err) {
-        console.warn("Errore caricamento richieste partner:", err);
-        failedSections.push("richieste partner");
-      }
-
-      // 5) TRIAL REQUESTS (PENDING)
-      try {
-        const resTrialCount = await apiClient.get("/admin/trial-requests/count", {
-          params: { status: "PENDING" },
-        });
-        setPendingTrialRequests(Number(resTrialCount?.data?.count ?? 0));
-      } catch (err) {
-        console.warn("Errore caricamento richieste trial:", err);
-        failedSections.push("richieste trial");
-      }
-
-      if (failedSections.length > 0) {
-        setError(
-          `Alcuni dati non sono stati caricati (${failedSections.join(", ")}). Riprova con "Aggiorna".`
-        );
-      }
-    } catch (err) {
-      console.error("Errore Dashboard Admin:", err);
-      setError("Impossibile caricare il riepilogo generale.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  async function load() {
+    setLoading(true);
+    const errors = [];
+    const tasks = [
+      apiClient.get("/admin/orders").then((r) => setOrders(Array.isArray(r.data?.items) ? r.data.items : [])).catch(() => errors.push("ordini")),
+      apiClient.get("/admin/free-tours").then((r) => setFreeTours(r.data)).catch(() => errors.push("registrazioni")),
+      apiClient
+        .get("/admin/partner-requests", { params: { status: "PENDING" } })
+        .then((r) => setPendingPartners(Array.isArray(r.data) ? r.data.length : 0))
+        .catch(() => errors.push("richieste partner")),
+      apiClient
+        .get("/admin/trial-requests/count", { params: { status: "PENDING" } })
+        .then((r) => setPendingTrials(Number(r.data?.count ?? 0)))
+        .catch(() => errors.push("richieste prova")),
+      apiClient
+        .get("/admin/payouts/by-partner")
+        .then((r) => setBalanceDue((Array.isArray(r.data) ? r.data : []).reduce((s, x) => s + (x.balance_due || 0), 0)))
+        .catch(() => errors.push("commissioni")),
+    ];
+    await Promise.all(tasks);
+    setFailed(errors);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    fetchData();
+    load();
   }, []);
+
+  const now = Date.now();
+  const paid = orders.filter((o) => o.payment_status === "PAID");
+  const inLast = (o, days) => o.created_at && now - new Date(o.created_at).getTime() <= days * DAY;
+  const paid7 = paid.filter((o) => inLast(o, 7));
+  const paid30 = paid.filter((o) => inLast(o, 30));
+  const sum = (list) => list.reduce((s, o) => s + (o.total_amount || 0), 0);
+  const ft = freeTours?.summary;
+
+  const todo = [
+    pendingPartners > 0 && { text: `${pendingPartners} ${pendingPartners === 1 ? "richiesta partner" : "richieste partner"} da valutare`, to: "/admin/partner-requests" },
+    pendingTrials > 0 && { text: `${pendingTrials} ${pendingTrials === 1 ? "richiesta di prova" : "richieste di prova"} in attesa`, to: "/admin/trial-requests" },
+    balanceDue > 0.005 && { text: `${eur(balanceDue)} di commissioni da pagare ai partner`, to: "/admin/payouts" },
+  ].filter(Boolean);
+
+  const today = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <AdminLayout>
-      <div
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-        }}
-      >
-        {/* HEADER */}
-        <div
-          style={{
-            background:
-              "radial-gradient(circle at top left, rgba(253,197,0,0.06), transparent 55%), " +
-              colors.card,
-            borderRadius: "16px",
-            padding: "24px 30px",
-            boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
-            border: `1px solid ${colors.borderSoft}`,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: "1.7rem", marginBottom: "0.3rem" }}>
-              Benvenuto nella Console
-            </h1>
-            <p
-              style={{
-                opacity: 0.82,
-                fontSize: "0.95rem",
-                maxWidth: "640px",
-                color: colors.textSoft,
-              }}
-            >
-              Il pannello di controllo di VoiceGuide AirLink: qui trovi a colpo
-              d&apos;occhio ordini, partner e stato dei payout.
-            </p>
-          </div>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <PageHeader
+          title="Panoramica"
+          subtitle={today.charAt(0).toUpperCase() + today.slice(1)}
+          action={<Button onClick={load} disabled={loading}>{loading ? "Carico…" : "Aggiorna"}</Button>}
+        />
 
-          <button
-            type="button"
-            onClick={fetchData}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "999px",
-              border: `1px solid ${colors.borderSoft}`,
-              background: colors.bgDeep,
-              color: colors.text,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            Aggiorna
-          </button>
+        {failed.length ? <div style={ui.error}>Non ho potuto caricare: {failed.join(", ")}. Riprova con Aggiorna.</div> : null}
+
+        <div style={ui.grid}>
+          <Stat label="Incassi · 7 giorni" value={eur(sum(paid7))} hint={`${eur(sum(paid30))} negli ultimi 30`} accent />
+          <Stat label="Ordini pagati · 7 giorni" value={paid7.length} hint={`${paid30.length} negli ultimi 30`} />
+          <Stat label="Registrazioni · 7 giorni" value={ft ? ft.last_7_days : "—"} hint={ft ? `${ft.total} in totale` : null} />
+          <Stat label="Tour gratuiti usati" value={ft ? ft.tours_used : "—"} hint={ft ? `${ft.registrants_who_used} registrati li hanno provati` : null} />
         </div>
 
-        {/* Alert errore */}
-        {error && (
-          <div
-            style={{
-              background: colors.card,
-              borderRadius: "16px",
-              padding: "14px 18px",
-              border: `1px solid ${colors.danger}`,
-              color: colors.dangerSoft,
-              fontSize: "0.9rem",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        <Card title="Da fare" style={{ marginBottom: 18 }}>
+          {todo.length === 0 ? (
+            <p style={{ ...ui.muted, margin: 0 }}>{loading ? "Controllo…" : "Niente in sospeso. 🎉"}</p>
+          ) : (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              {todo.map((t) => (
+                <li key={t.to} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", borderRadius: 14, background: "#FFF6DA", border: `1px solid ${colors.accentBorder}` }}>
+                  <span style={{ fontWeight: 600 }}>{t.text}</span>
+                  <ArrowLink to={t.to}>Apri</ArrowLink>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
-        {/* TILE */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "14px",
-          }}
-        >
-          <StatCard label="Numero ordini" value={ordersSummary.totalCount} />
-          <StatCard label="Incassato totale" value={formatEuro(ordersSummary.totalAmount)} />
-          <StatCard label="Partner attivi" value={partnersActiveCount} />
-          <StatCard label="Partner disattivi" value={partnersInactiveCount} />
-          <StatCard label="Richieste partner (PENDING)" value={pendingPartnerRequests} />
-          <StatCard label="Richieste trial (PENDING)" value={pendingTrialRequests} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 18 }}>
+          <Card title="Ultimi ordini" action={<ArrowLink to="/admin/orders">Tutti</ArrowLink>}>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {orders.slice(0, 6).map((o) => (
+                <li key={o.id} style={rowStyle}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis" }}>{o.buyer_email}</span>
+                    <span style={ui.muted}>#{o.id} · {dateTime(o.created_at)}</span>
+                  </span>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <b>{eur(o.total_amount)}</b>
+                    <Pill tone={o.payment_status === "PAID" ? "good" : o.payment_status === "PENDING" ? "warn" : "bad"}>{statusLabel(o.payment_status)}</Pill>
+                  </span>
+                </li>
+              ))}
+              {!loading && orders.length === 0 ? <li style={ui.muted}>Ancora nessun ordine.</li> : null}
+            </ul>
+          </Card>
+
+          <Card title="Ultime registrazioni" action={<ArrowLink to="/admin/free-tours">Tutte</ArrowLink>}>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {(freeTours?.items || []).slice(0, 6).map((i) => (
+                <li key={i.id} style={rowStyle}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis" }}>{i.email}</span>
+                    <span style={ui.muted}>{(i.language || "").toUpperCase()} · {dateTime(i.registered_at)}</span>
+                  </span>
+                  <Pill tone={i.used > 0 ? "good" : "neutral"}>usati {i.used}/{i.licenses.length || 3}</Pill>
+                </li>
+              ))}
+              {!loading && !(freeTours?.items || []).length ? <li style={ui.muted}>Ancora nessuna registrazione.</li> : null}
+            </ul>
+          </Card>
         </div>
-
-        {/* ECONOMIA */}
-        <div
-          style={{
-            background: colors.card,
-            borderRadius: "16px",
-            padding: "18px 22px",
-            border: `1px solid ${colors.borderSoft}`,
-            display: "flex",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}
-        >
-          <MiniBox label="Totale generato" value={formatEuro(payoutsSummary.totalGenerated)} />
-          <MiniBox label="Totale pagato" value={formatEuro(payoutsSummary.totalPaid)} />
-          <MiniBox label="Saldo residuo" value={formatEuro(payoutsSummary.totalBalance)} />
-        </div>
-
-        {/* SHORTCUT */}
-        <div
-          style={{
-            background: colors.card,
-            borderRadius: "16px",
-            padding: "20px 24px",
-            border: `1px solid ${colors.borderSoft}`,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          <ShortcutCard
-            title="Gestisci ordini"
-            description="Visualizza l'elenco completo degli ordini e delle licenze acquistate."
-            buttonLabel="Vai agli ordini"
-            onClick={() => navigate("/admin/orders")}
-          />
-          <ShortcutCard
-            title="Create Trial License"
-            description="Crea una licenza di prova/manuale e invia automaticamente il codice via email."
-            buttonLabel="Crea trial"
-            onClick={() => navigate("/admin/licenses/trial")}
-          />
-          <ShortcutCard
-            title="Richieste Trial"
-            description="Inbox richieste trial dal sito."
-            buttonLabel="Vai alle richieste trial"
-            onClick={() => navigate("/admin/trial-requests")}
-          />
-          <ShortcutCard
-            title="Payout e commissioni"
-            description="Controlla i pagamenti e i saldi residui."
-            buttonLabel="Vai ai payout"
-            onClick={() => navigate("/admin/payouts")}
-          />
-          <ShortcutCard
-            title="Richieste partner"
-            description="Approva o rifiuta le richieste partner."
-            buttonLabel="Vai alle richieste"
-            onClick={() => navigate("/admin/partner-requests")}
-          />
-          <ShortcutCard
-            title="Partner VoiceGuide"
-            description="Rivedi i tuoi partner."
-            buttonLabel="Vai ai partner"
-            onClick={() => navigate("/admin/partners")}
-          />
-        </div>
-
-        {loading && (
-          <p style={{ opacity: 0.7, fontSize: "0.85rem" }}>
-            Aggiornamento dati in corso...
-          </p>
-        )}
       </div>
     </AdminLayout>
   );
 }
 
-/* ----------------- COMPONENTI UI ----------------- */
-
-function StatCard({ label, value }) {
-  return (
-    <div
-      style={{
-        background: colors.card,
-        borderRadius: "14px",
-        padding: "14px 16px",
-        border: `1px solid ${colors.borderStrong}`,
-      }}
-    >
-      <div style={{ fontSize: "0.8rem", opacity: 0.72 }}>{label}</div>
-      <div style={{ fontSize: "1.2rem", fontWeight: 700, color: colors.accent }}>
-        {value}
-      </div>
-    </div>
-  );
+function statusLabel(s) {
+  return { PAID: "Pagato", PENDING: "In attesa", FAILED: "Fallito", REFUNDED: "Rimborsato" }[s] || s || "—";
 }
 
-function MiniBox({ label, value }) {
-  return (
-    <div
-      style={{
-        minWidth: "160px",
-        padding: "8px 10px",
-        borderRadius: "10px",
-        background: colors.bgDeep,
-        border: `1px solid ${colors.accentBorder}`,
-      }}
-    >
-      <div style={{ fontSize: "0.8rem", opacity: 0.78 }}>{label}</div>
-      <div style={{ fontWeight: 600, color: colors.accent }}>{value}</div>
-    </div>
-  );
-}
-
-function ShortcutCard({ title, description, buttonLabel, onClick }) {
-  return (
-    <div
-      style={{
-        background: colors.bgDeep,
-        borderRadius: "12px",
-        padding: "14px 16px",
-        border: `1px solid ${colors.borderStrong}`,
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-      }}
-    >
-      <div>
-        <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{title}</div>
-        <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>{description}</div>
-      </div>
-      <button
-        onClick={onClick}
-        style={{
-          alignSelf: "flex-start",
-          padding: "6px 12px",
-          borderRadius: "999px",
-          background: "linear-gradient(135deg, #FDC500, #FBBF24)",
-          border: "none",
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
-      >
-        {buttonLabel}
-      </button>
-    </div>
-  );
-}
-
-function formatEuro(value) {
-  const num = typeof value === "number" ? value : Number(value || 0);
-  return `${num.toFixed(2)} €`;
-}
+const rowStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "11px 0",
+  borderBottom: "1px solid rgba(20,22,27,0.08)",
+};

@@ -11,6 +11,7 @@ import AdminPayouts from "./pages/admin/AdminPayouts";
 import AdminPartnerRequests from "./pages/admin/AdminPartnerRequests";
 import AdminCreateTrialLicense from "./pages/admin/AdminCreateTrialLicense";
 import AdminTrialRequests from "./pages/admin/AdminTrialRequests";
+import AdminFreeTours from "./pages/admin/AdminFreeTours";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -48,6 +49,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AdminOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/free-tours"
+          element={
+            <ProtectedRoute>
+              <AdminFreeTours />
             </ProtectedRoute>
           }
         />

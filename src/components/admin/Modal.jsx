@@ -58,7 +58,7 @@ const styles = {
     border: `1px solid ${colors.accentBorder}`,
     borderRadius: 18,
     padding: 20,
-    boxShadow: "0 24px 60px rgba(0,0,0,0.55)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     maxHeight: "calc(100vh - 32px)",
     overflowY: "auto",
   },

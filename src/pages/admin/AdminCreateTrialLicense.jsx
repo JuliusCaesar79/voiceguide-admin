@@ -264,7 +264,7 @@ const styles = {
       colors.card,
     borderRadius: 16,
     padding: "22px 26px",
-    boxShadow: "0 18px 45px rgba(0, 0, 0, 0.65)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     border: `1px solid ${colors.borderSoft}`,
     display: "flex",
     alignItems: "center",
@@ -286,7 +286,7 @@ const styles = {
     background: colors.card,
     borderRadius: 16,
     padding: "18px 20px",
-    boxShadow: "0 12px 35px rgba(0, 0, 0, 0.6)",
+    boxShadow: "0 10px 30px rgba(20,22,27,0.06)",
     border: `1px solid ${colors.borderSoft}`,
   },
 
