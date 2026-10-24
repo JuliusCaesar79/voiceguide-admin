@@ -54,7 +54,14 @@ export default function AdminFreeTours() {
         />
         <Stat label="Tour gratuiti usati" value={s ? s.tours_used : "—"} hint={s ? `su ${s.total * 3} regalati` : null} />
         <Stat label="Codice chiesto, non confermato" value={s ? s.codes_sent_not_confirmed : "—"} hint="email che non hanno finito" />
+        <Stat
+          label="Hanno poi comprato"
+          value={s ? s.registrants_who_bought : "—"}
+          hint={s ? `${euro(s.revenue_from_registrants)} incassati` : null}
+        />
       </div>
+
+      {s ? <Funnel s={s} /> : null}
 
       <Card
         title="Elenco"
@@ -76,6 +83,7 @@ export default function AdminFreeTours() {
                 <th style={ui.th}>Lingua</th>
                 <th style={ui.th}>Registrato</th>
                 <th style={ui.th}>Tour usati</th>
+                <th style={ui.th}>Acquisti</th>
                 <th style={ui.th}>Codici</th>
               </tr>
             </thead>
@@ -87,6 +95,9 @@ export default function AdminFreeTours() {
                   <td style={{ ...ui.td, whiteSpace: "nowrap" }}>{dateTime(i.registered_at)}</td>
                   <td style={ui.td}>
                     <Pill tone={i.used > 0 ? "good" : "neutral"}>{i.used}/{i.licenses.length || 3}</Pill>
+                  </td>
+                  <td style={{ ...ui.td, whiteSpace: "nowrap" }}>
+                    {i.orders_paid > 0 ? <Pill tone="good">{i.orders_paid} · {euro(i.spent)}</Pill> : <span style={ui.muted}>—</span>}
                   </td>
                   <td style={ui.td}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -102,7 +113,7 @@ export default function AdminFreeTours() {
               ))}
               {!loading && items.length === 0 ? (
                 <tr>
-                  <td style={ui.td} colSpan={5}>
+                  <td style={ui.td} colSpan={6}>
                     <span style={ui.muted}>{q ? "Nessuna email trovata." : "Ancora nessuna registrazione."}</span>
                   </td>
                 </tr>
@@ -112,5 +123,42 @@ export default function AdminFreeTours() {
         </div>
       </Card>
     </AdminLayout>
+  );
+}
+
+function euro(n) {
+  return `€${Number(n || 0).toFixed(2).replace(".", ",")}`;
+}
+
+// Percorso dalla registrazione all'acquisto: barre proporzionali e % rispetto
+// al passo precedente, per vedere dove si perdono le persone.
+function Funnel({ s }) {
+  const steps = [
+    { label: "Hanno chiesto il codice", value: s.total + s.codes_sent_not_confirmed },
+    { label: "Hanno confermato l'email", value: s.total },
+    { label: "Hanno usato almeno un tour", value: s.registrants_who_used },
+    { label: "Hanno comprato", value: s.registrants_who_bought },
+  ];
+  const max = steps[0].value || 1;
+  return (
+    <Card title="Percorso: dalla registrazione all'acquisto" style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {steps.map((step, i) => {
+          const prev = i > 0 ? steps[i - 1].value : null;
+          return (
+            <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ width: 210, fontSize: 14, fontWeight: 600 }}>{step.label}</span>
+              <div style={{ flex: "1 1 200px", height: 14, background: "#F1EBDD", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ width: `${(step.value / max) * 100}%`, height: "100%", background: "#FFC226", borderRadius: 999 }} />
+              </div>
+              <span style={{ width: 120, fontSize: 14, fontWeight: 700, textAlign: "right" }}>
+                {step.value}
+                {prev ? <span style={ui.muted}> · {Math.round((step.value / prev) * 100)}%</span> : null}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
